@@ -1,0 +1,371 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.page {
+  max-width: 1200px;
+  margin: $space-6 auto;
+  padding: 0 $space-6;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $space-4;
+  margin-bottom: $space-5;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+}
+
+.primary {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}
+
+.back {
+  color: $color-text-muted;
+  text-decoration: none;
+  font-size: 14px;
+  display: inline-block;
+  margin-bottom: $space-3;
+  &:hover {
+    color: $color-text;
+  }
+}
+
+.empty {
+  padding: $space-8;
+  text-align: center;
+  color: $color-text-muted;
+  @include card;
+}
+
+.tableWrap {
+  @include card;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th,
+  td {
+    padding: $space-3 $space-4;
+    text-align: left;
+    border-bottom: 1px solid $color-border;
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: 600;
+    background: $color-bg;
+    color: $color-text-muted;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr:hover {
+    background: $color-bg;
+  }
+}
+
+.actionsCell {
+  display: flex;
+  gap: $space-2;
+  white-space: nowrap;
+
+  button {
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    cursor: pointer;
+    font-size: 13px;
+    &:hover:not(:disabled) {
+      background: $color-bg;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.danger {
+  color: $color-danger;
+  border-color: $color-danger-soft !important;
+  &:hover:not(:disabled) {
+    background: $color-danger-soft !important;
+  }
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: start center;
+  padding: $space-6;
+  overflow-y: auto;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 800px;
+  background: $color-surface;
+  border-radius: $radius-lg;
+  padding: $space-6;
+  box-shadow: $shadow-lg;
+  overflow-y: auto;
+  max-height: 90dvh;
+
+  h2 {
+    margin: 0 0 $space-5;
+    font-size: 20px;
+  }
+}
+
+.errorBanner {
+  padding: $space-3 $space-4;
+  background: $color-danger-soft;
+  border: 1px solid $color-danger;
+  color: $color-danger;
+  border-radius: $radius-md;
+  font-size: 14px;
+  margin-bottom: $space-4;
+}
+
+.errorList {
+  margin: $space-2 0 0;
+  padding-left: $space-5;
+  font-size: 13px;
+
+  li {
+    margin: 2px 0;
+    font-family: $font-mono;
+  }
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto;
+  gap: $space-3;
+  align-items: end;
+  padding: $space-4;
+  margin-bottom: $space-4;
+  @include card;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+    font-size: 13px;
+    color: $color-text-muted;
+
+    input,
+    select {
+      padding: $space-2 $space-3;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      background: $color-surface;
+      color: $color-text;
+      font-size: 14px;
+    }
+  }
+}
+
+.filterReset {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text;
+  height: 38px;
+  &:hover:not(:disabled) {
+    background: $color-bg;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badgeCreate {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badgeUpdate {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badgeDelete {
+  background: $color-danger-soft;
+  color: $color-danger;
+}
+
+.diffCell {
+  padding: 0 !important;
+}
+
+.diff {
+  margin: 0;
+  padding: $space-3 $space-4;
+  background: $color-bg;
+  font-family: $font-mono;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3 0;
+  font-size: 13px;
+
+  button {
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    cursor: pointer;
+    &:hover:not(:disabled) {
+      background: $color-bg;
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.pagerInfo {
+  color: $color-text-muted;
+  margin-right: auto;
+}
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  padding: $space-6;
+}
+
+.confirmCard {
+  background: $color-surface;
+  border-radius: $radius-lg;
+  padding: $space-6;
+  box-shadow: $shadow-lg;
+  max-width: 460px;
+  width: 100%;
+
+  h3 {
+    margin: 0 0 $space-3;
+    font-size: 18px;
+  }
+  p {
+    margin: 0 0 $space-5;
+    color: $color-text-muted;
+    line-height: 1.5;
+  }
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-3;
+
+  button {
+    @include button-base;
+    padding: $space-2 $space-4;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text;
+    &:hover:not(:disabled) {
+      background: $color-bg;
+    }
+  }
+}
+
+.confirmPrimary {
+  background: $color-primary !important;
+  color: white !important;
+  border-color: $color-primary !important;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover !important;
+  }
+}
+
+.confirmDanger {
+  background: $color-danger !important;
+  color: white !important;
+  border-color: $color-danger !important;
+  &:hover:not(:disabled) {
+    background: $color-danger-hover !important;
+  }
+}
+
+.thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-sm;
+  object-fit: cover;
+  border: 1px solid $color-border;
+  background: $color-bg;
+  vertical-align: middle;
+}
+
+.thumbStack {
+  display: inline-flex;
+  gap: -8px;
+
+  .thumb + .thumb {
+    margin-left: -10px;
+    box-shadow: -1px 0 0 $color-surface;
+  }
+}
+
+.thumbExtra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-sm;
+  background: $color-bg;
+  border: 1px solid $color-border;
+  font-size: 11px;
+  color: $color-text-muted;
+  margin-left: $space-1;
+}

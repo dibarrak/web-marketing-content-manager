@@ -1,0 +1,30 @@
+---
+import '@styles/globals.scss';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import CollectionPage from '@components/dashboard/CollectionPage';
+import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+
+const { collectionId } = Astro.params;
+const collection = collectionId ? findCollectionById(collectionId) : undefined;
+if (!collection) return Astro.redirect(withBase('dashboard'));
+
+// safety: ensure key is one of our known keys
+const known = Object.values(COLLECTIONS).find((c) => c.collectionId === collection.collectionId);
+if (!known) return Astro.redirect(withBase('dashboard'));
+---
+
+<BaseLayout title={`${collection.displayName} — Webflow Content Manager`}>
+  <CollectionPage
+    client:only="react"
+    collectionKey={known.key}
+    collectionId={collection.collectionId}
+    displayName={collection.displayName}
+    singularName={collection.singularName}
+  />
+</BaseLayout>

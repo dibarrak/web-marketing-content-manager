@@ -1,0 +1,25 @@
+overrides:
+  kysely: "^0.29.2"
+
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  sharp: false
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@cloudflare/workerd-darwin-64@1.20260526.1'
+  - '@cloudflare/workerd-darwin-arm64@1.20260526.1'
+  - '@cloudflare/workerd-linux-64@1.20260526.1'
+  - '@cloudflare/workerd-linux-arm64@1.20260526.1'
+  - '@cloudflare/workerd-windows-64@1.20260526.1'
+  - miniflare@4.20260526.0
+  - workerd@1.20260526.1
+  - wrangler@4.95.0
+  - '@better-auth/core@1.6.12'
+  - '@better-auth/drizzle-adapter@1.6.12'
+  - '@better-auth/kysely-adapter@1.6.12'
+  - '@better-auth/memory-adapter@1.6.12'
+  - '@better-auth/mongo-adapter@1.6.12'
+  - '@better-auth/prisma-adapter@1.6.12'
+  - '@better-auth/telemetry@1.6.12'
+  - better-auth@1.6.12

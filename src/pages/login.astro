@@ -1,0 +1,14 @@
+---
+import '@styles/globals.scss';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import LoginForm from '@components/auth/LoginForm';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const next = new URL(Astro.request.url).searchParams.get('next') ?? withBase('dashboard');
+---
+
+<BaseLayout title="Login — Webflow Content Manager">
+  <LoginForm client:load next={next} />
+</BaseLayout>

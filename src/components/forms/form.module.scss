@@ -1,0 +1,99 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+}
+
+.fieldset {
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: $space-5;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+  background: $color-surface;
+
+  legend {
+    padding: 0 $space-2;
+    font-weight: 600;
+    color: $color-text-muted;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $space-4;
+  grid-template-columns: 1fr;
+  @include md {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-3;
+  padding-top: $space-4;
+  border-top: 1px solid $color-border;
+}
+
+.primary {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}
+
+.secondary {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text;
+  &:hover:not(:disabled) {
+    background: $color-bg;
+  }
+}
+
+.danger {
+  @include button-base;
+  background: $color-danger;
+  color: white;
+  &:hover:not(:disabled) {
+    background: $color-danger-hover;
+  }
+}
+
+.errorSummary {
+  padding: $space-3 $space-4;
+  background: $color-danger-soft;
+  border: 1px solid $color-danger;
+  border-radius: $radius-md;
+  color: $color-danger;
+  font-size: 13px;
+
+  strong {
+    display: block;
+    margin-bottom: $space-2;
+  }
+  ul {
+    margin: 0;
+    padding-left: $space-5;
+  }
+  code {
+    font-family: $font-mono;
+    font-size: 12px;
+  }
+}
+
+.fieldName {
+  font-weight: 600;
+}

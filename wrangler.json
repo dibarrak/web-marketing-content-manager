@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "web-marketing-content-manager",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_APP_NAME": "Webflow Content Manager"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "web_marketing_db",
+      "database_id": "placeholder-webflow-generates-this",
+      "migrations_dir": "./drizzle/migrations"
+    }
+  ]
+}

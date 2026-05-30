@@ -1,0 +1,160 @@
+---
+import '@styles/globals.scss';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { COLLECTIONS } from '@lib/config/sites';
+import { getWebflow, WebflowApiError } from '@lib/webflow';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+
+const env = Astro.locals.runtime.env;
+const wf = getWebflow(env);
+
+const collectionsList = Object.values(COLLECTIONS);
+const counts = await Promise.all(
+  collectionsList.map(async (c) => {
+    try {
+      const res = await wf.collections.list(c.collectionId, { limit: 1 });
+      return { key: c.key, total: res.pagination.total, error: null as string | null };
+    } catch (err) {
+      const msg = err instanceof WebflowApiError ? `${err.code}: ${err.message}` : String(err);
+      return { key: c.key, total: 0, error: msg };
+    }
+  }),
+);
+---
+
+<BaseLayout title="Dashboard — Webflow Content Manager">
+  <main class="dashboard">
+      <header class="header">
+        <div>
+          <h1>Webflow Content Manager</h1>
+          <p class="muted">
+            {user.name} · {user.email} · rol: {user.role}
+          </p>
+        </div>
+        <div class="header-actions">
+          <a href={withBase('audit-log')} class="auditlink">Bitácora</a>
+          <button type="button" class="signout" data-signout>Cerrar sesión</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        {
+          collectionsList.map((c) => {
+            const stat = counts.find((x) => x.key === c.key)!;
+            return (
+              <a class="card" href={withBase(`collections/${c.collectionId}`)}>
+                <h2>{c.displayName}</h2>
+                <p class="muted">site {c.siteId}</p>
+                {stat.error ? (
+                  <p class="error">⚠ {stat.error}</p>
+                ) : (
+                  <p class="count">{stat.total} items</p>
+                )}
+              </a>
+            );
+          })
+        }
+      </section>
+    </main>
+
+    <script>
+      import { withBase } from '@lib/base-path';
+      document.querySelector('[data-signout]')?.addEventListener('click', async () => {
+        await fetch(withBase('api/auth/sign-out'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        window.location.href = withBase('login');
+      });
+    </script>
+
+    <style lang="scss">
+      .dashboard {
+        max-width: 1080px;
+        margin: $space-8 auto;
+        padding: $space-6;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: $space-8;
+
+        h1 {
+          margin: 0 0 $space-1;
+          font-size: 28px;
+        }
+      }
+      .muted {
+        margin: 0;
+        color: $color-text-muted;
+        font-size: 14px;
+      }
+      .grid {
+        display: grid;
+        gap: $space-4;
+        grid-template-columns: 1fr;
+        @include md {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .card {
+        display: block;
+        padding: $space-5;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 120ms ease, box-shadow 120ms ease;
+        @include card;
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: $shadow-md;
+        }
+        h2 {
+          margin: 0 0 $space-2;
+          font-size: 18px;
+        }
+      }
+      .count {
+        margin: $space-3 0 0;
+        font-size: 32px;
+        font-weight: 600;
+        color: $color-primary;
+      }
+      .error {
+        margin: $space-3 0 0;
+        color: $color-danger;
+        font-size: 13px;
+        word-break: break-word;
+      }
+      .header-actions {
+        display: flex;
+        gap: $space-3;
+        align-items: center;
+      }
+      .auditlink {
+        @include button-base;
+        background: transparent;
+        border: 1px solid $color-border;
+        color: $color-text;
+        text-decoration: none;
+        &:hover {
+          background: $color-bg;
+        }
+      }
+      .signout {
+        @include button-base;
+        background: transparent;
+        border: 1px solid $color-border;
+        color: $color-text;
+        &:hover {
+          background: $color-bg;
+        }
+      }
+    </style>
+</BaseLayout>

@@ -1,0 +1,10 @@
+---
+import '@styles/globals.scss';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+return Astro.redirect(withBase('dashboard'));
+---

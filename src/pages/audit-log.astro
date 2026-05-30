@@ -1,0 +1,15 @@
+---
+import '@styles/globals.scss';
+import BaseLayout from '@layouts/BaseLayout.astro';
+import AuditLogView from '@components/dashboard/AuditLogView';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+---
+
+<BaseLayout title="Bitácora — Webflow Content Manager">
+  <AuditLogView client:only="react" />
+</BaseLayout>
