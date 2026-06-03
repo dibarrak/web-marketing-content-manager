@@ -17,6 +17,7 @@ import HeroBannerForm from '../forms/HeroBannerForm';
 import QueryProvider from '../providers/QueryProvider';
 import ConfirmDialog from './ConfirmDialog';
 import CouponCard from './CouponCard';
+import CouponFilterCard from './CouponFilterCard';
 import styles from './dashboard.module.scss';
 import ItemTable, { type ColumnDef } from './ItemTable';
 
@@ -249,6 +250,26 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
             <div>
               {translatedItems.map((item) => (
                 <CouponCard
+                  key={item.id}
+                  item={item}
+                  onEdit={setEditing}
+                  onDelete={setPendingDelete}
+                  deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        if (collectionKey === 'couponFilterList') {
+          return translatedItems.length === 0 ? (
+            <p className={styles.empty}>
+              Sin items todavía. Click en "Nuevo" para crear el primero.
+            </p>
+          ) : (
+            <div>
+              {translatedItems.map((item) => (
+                <CouponFilterCard
                   key={item.id}
                   item={item}
                   onEdit={setEditing}
