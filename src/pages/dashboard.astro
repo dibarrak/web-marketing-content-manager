@@ -4,6 +4,8 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import { COLLECTIONS } from '@lib/config/sites';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
+import { Ticket, Tickets, BookX, Globe, LogOut, FileClock } from 'lucide-react';
+import IconShowcase from '@components/IconShowcase';
 
 export const prerender = false;
 
@@ -14,6 +16,13 @@ const env = Astro.locals.runtime.env;
 const wf = getWebflow(env);
 
 const collectionsList = Object.values(COLLECTIONS);
+
+const collectionIconMap = {
+  '695bfb101cc1337da4ec00af': Ticket,
+  '6961886320253700c1e5baf5': Tickets,
+  '69865d518920fb1ddd9007f3': BookX,
+};
+
 const counts = await Promise.all(
   collectionsList.map(async (c) => {
     try {
@@ -37,8 +46,8 @@ const counts = await Promise.all(
           </p>
         </div>
         <div class="header-actions">
-          <a href={withBase('audit-log')} class="auditlink">Bitácora</a>
-          <button type="button" class="signout" data-signout>Cerrar sesión</button>
+          <a href={withBase('audit-log')} class="auditlink">Bitácora <FileClock size={16}></a>
+          <button type="button" class="signout" data-signout>Cerrar sesión <LogOut size={16}></button>
         </div>
       </header>
 
@@ -46,15 +55,17 @@ const counts = await Promise.all(
         {
           collectionsList.map((c) => {
             const stat = counts.find((x) => x.key === c.key)!;
+            const IconComponent = collectionIconMap[c.collectionId as keyof typeof collectionIconMap];
             return (
               <a class="card" href={withBase(`collections/${c.collectionId}`)}>
+                {IconComponent && <IconComponent size={32} />}
                 <h2>{c.displayName}</h2>
-                <p class="muted">site {c.siteId}</p>
                 {stat.error ? (
                   <p class="error">⚠ {stat.error}</p>
                 ) : (
                   <p class="count">{stat.total} items</p>
                 )}
+                <p class="muted site-id-tag"><Globe size={16}><span>{c.siteId}</span></p>
               </a>
             );
           })
@@ -95,6 +106,15 @@ const counts = await Promise.all(
         margin: 0;
         color: $color-text-muted;
         font-size: 14px;
+      }
+      .site-id-tag {
+        background-color: $color-bg-1;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding: 4px 0.5rem;
+        border-radius: 50px;
       }
       .grid {
         display: grid;
@@ -149,11 +169,12 @@ const counts = await Promise.all(
       }
       .signout {
         @include button-base;
-        background: transparent;
+        background: $color-danger;
         border: 1px solid $color-border;
-        color: $color-text;
+        color: $color-surface;
+        
         &:hover {
-          background: $color-bg;
+          background: $color-danger-hover;
         }
       }
     </style>
