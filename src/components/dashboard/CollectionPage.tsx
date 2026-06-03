@@ -1,15 +1,3 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AxiosError } from 'axios';
-import QueryProvider from '../providers/QueryProvider';
-import ItemTable, { type ColumnDef } from './ItemTable';
-import ConfirmDialog from './ConfirmDialog';
-import CouponForm from '../forms/CouponForm';
-import CouponFilterForm from '../forms/CouponFilterForm';
-import HeroBannerForm from '../forms/HeroBannerForm';
-import type { CollectionKey } from '@lib/config/sites';
-import { withBase } from '@lib/base-path';
-import { translateOptionFields } from '@lib/webflow/option-maps';
 import {
   createItem,
   deleteItem,
@@ -17,8 +5,20 @@ import {
   updateItem,
   type WebflowItem,
 } from '@lib/api-client';
-import { reverseTranslateOptionFields } from '@lib/webflow/option-maps';
+import { withBase } from '@lib/base-path';
+import type { CollectionKey } from '@lib/config/sites';
+import { reverseTranslateOptionFields, translateOptionFields } from '@lib/webflow/option-maps';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
+import { useState } from 'react';
+import CouponFilterForm from '../forms/CouponFilterForm';
+import CouponForm from '../forms/CouponForm';
+import HeroBannerForm from '../forms/HeroBannerForm';
+import QueryProvider from '../providers/QueryProvider';
+import ConfirmDialog from './ConfirmDialog';
+import CouponCard from './CouponCard';
 import styles from './dashboard.module.scss';
+import ItemTable, { type ColumnDef } from './ItemTable';
 
 interface Props {
   collectionKey: CollectionKey;
@@ -231,21 +231,45 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           Error cargando items: {(itemsQuery.error as Error).message}
         </div>
       )}
-      {itemsQuery.data && (
-        <ItemTable<AnyFields>
-          items={itemsQuery.data.items.map((item) => ({
-            ...item,
-            fieldData: translateOptionFields(collectionKey, item.fieldData) as AnyFields & {
-              name: string;
-              slug: string;
-            },
-          }))}
-          columns={COLUMNS[collectionKey]}
-          onEdit={(item) => setEditing(item)}
-          onDelete={(item) => setPendingDelete(item)}
-          deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
-        />
-      )}
+      {itemsQuery.data && (() => {
+        const translatedItems = itemsQuery.data.items.map((item) => ({
+          ...item,
+          fieldData: translateOptionFields(collectionKey, item.fieldData) as AnyFields & {
+            name: string;
+            slug: string;
+          },
+        }));
+
+        if (collectionKey === 'coupons') {
+          return translatedItems.length === 0 ? (
+            <p className={styles.empty}>
+              Sin items todavía. Click en "Nuevo" para crear el primero.
+            </p>
+          ) : (
+            <div>
+              {translatedItems.map((item) => (
+                <CouponCard
+                  key={item.id}
+                  item={item}
+                  onEdit={setEditing}
+                  onDelete={setPendingDelete}
+                  deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
+                />
+              ))}
+            </div>
+          );
+        }
+
+        return (
+          <ItemTable<AnyFields>
+            items={translatedItems}
+            columns={COLUMNS[collectionKey]}
+            onEdit={(item) => setEditing(item)}
+            onDelete={(item) => setPendingDelete(item)}
+            deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
+          />
+        );
+      })()}
 
       <ConfirmDialog
         open={!!pendingDelete}
