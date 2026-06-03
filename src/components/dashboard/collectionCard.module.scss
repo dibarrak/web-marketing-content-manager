@@ -8,6 +8,12 @@
   margin: $space-3 0;
   position: relative;
   overflow: hidden;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $shadow-md;
+  }
 }
 
 // Inner wrapper leaves room for the side-status badge (34 px wide)
@@ -207,6 +213,134 @@
   &.hidden {
     background-color: $color-text-muted;
   }
+}
+
+// ── Banner-specific ────────────────────────────────────────────────────────────
+
+// Wider right column for banners (overrides .metaBlock max-width + padding)
+.bannerMeta {
+  max-width: 360px;
+  padding-bottom: 0;
+}
+
+// Wrapper around the site-target badge, to allow space for an optional icon next to it without breaking the layout
+.siteTargetWrapper {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+}
+
+// Animated site-target badge (pagina-despliegue)
+.siteTarget {
+  display: inline-block;
+  background-color: $color-primary;
+  padding: 4px $space-2;
+  border-radius: $radius-sm;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  animation: colorPulse 4s ease-in-out infinite;
+}
+
+@keyframes colorPulse {
+  0%, 100% { background-color: $color-primary; }
+  50% { background-color: $color-primary-hover; }
+}
+
+// 3-column color grid (fondo | texto alterno | gradiente)
+.colorGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: $space-4;
+  margin-bottom: $space-2;
+}
+
+.colorItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-1;
+
+  p { margin-bottom: 0; }
+}
+
+// Image thumbnails row (desktop, mobile, logo)
+.bannerImages {
+  display: flex;
+  gap: $space-4;
+  margin-top: $space-2;
+  flex-wrap: wrap;
+}
+
+.bannerImage {
+  p { margin-bottom: $space-1; }
+
+  img {
+    max-width: 120px;
+    border-radius: $radius-sm;
+    display: block;
+  }
+}
+
+// Truncated URL row with external-link icon
+.urlRow {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  min-width: 0;
+  margin: 0 0 $space-2;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+.urlLink {
+  display: inline-flex;
+  align-items: center;
+  color: $color-text-muted;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: $radius-sm;
+  transition: color 120ms ease;
+
+  &:hover { color: $color-primary; }
+}
+
+// Button-info groups side by side
+.buttonGroups {
+  display: flex;
+  gap: $space-4;
+  margin-bottom: $space-2;
+}
+
+.buttonGroup {
+  min-width: 0;
+  flex: 1;
+}
+
+// Rich-text content block (dangerouslySetInnerHTML output from TipTap)
+.richText {
+  margin-bottom: $space-2;
+  
+  p { margin: 0 0 $space-2; line-height: 1.5; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  ul, ol { margin: 0 0 $space-2; padding-left: $space-4; }
+  li { margin-bottom: $space-1; }
+  > :last-child { margin-bottom: 0; }
+}
+
+// In-flow actions (not absolutely positioned, unlike coupon .actions)
+.bannerActions {
+  display: flex;
+  gap: $space-2;
+  justify-content: flex-end;
+  margin-top: $space-3;
 }
 
 // ── Color preview (shared utility for banner gradient previews, etc.) ──────────

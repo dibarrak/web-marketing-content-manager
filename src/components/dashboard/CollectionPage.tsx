@@ -18,8 +18,8 @@ import QueryProvider from '../providers/QueryProvider';
 import ConfirmDialog from './ConfirmDialog';
 import CouponCard from './CouponCard';
 import CouponFilterCard from './CouponFilterCard';
+import HeroBannerCard from './HeroBannerCard';
 import styles from './dashboard.module.scss';
-import ItemTable, { type ColumnDef } from './ItemTable';
 
 interface Props {
   collectionKey: CollectionKey;
@@ -30,28 +30,6 @@ interface Props {
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
 
-const COLUMNS: Record<CollectionKey, ColumnDef<AnyFields>[]> = {
-  coupons: [
-    { key: 'name', label: 'Name' },
-    { key: 'coupon-title', label: 'Título' },
-    { key: 'related-merchants', label: 'Merchants', thumb: true },
-    { key: 'coupon-display', label: 'Display' },
-    { key: 'lastUpdated', label: 'Actualizado' },
-  ],
-  couponFilterList: [
-    { key: 'name', label: 'Name' },
-    { key: 'slug', label: 'Slug' },
-    { key: 'coupon-display', label: 'Display' },
-    { key: 'lastUpdated', label: 'Actualizado' },
-  ],
-  heroBanners: [
-    { key: 'imagen-2', label: 'Imagen', thumb: true },
-    { key: 'name', label: 'Name' },
-    { key: 'pagina-despliegue', label: 'Página' },
-    { key: 'fechas-despliegue', label: 'Fechas' },
-    { key: 'lastUpdated', label: 'Actualizado' },
-  ],
-};
 
 function CollectionPageInner({ collectionKey, collectionId, displayName, singularName }: Props) {
   const qc = useQueryClient();
@@ -281,14 +259,23 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           );
         }
 
-        return (
-          <ItemTable<AnyFields>
-            items={translatedItems}
-            columns={COLUMNS[collectionKey]}
-            onEdit={(item) => setEditing(item)}
-            onDelete={(item) => setPendingDelete(item)}
-            deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
-          />
+        // heroBanners — custom card view
+        return translatedItems.length === 0 ? (
+          <p className={styles.empty}>
+            Sin items todavía. Click en "Nuevo" para crear el primero.
+          </p>
+        ) : (
+          <div>
+            {translatedItems.map((item) => (
+              <HeroBannerCard
+                key={item.id}
+                item={item}
+                onEdit={setEditing}
+                onDelete={setPendingDelete}
+                deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
+              />
+            ))}
+          </div>
         );
       })()}
 
