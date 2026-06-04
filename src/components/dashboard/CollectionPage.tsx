@@ -10,7 +10,8 @@ import type { CollectionKey } from '@lib/config/sites';
 import { reverseTranslateOptionFields, translateOptionFields } from '@lib/webflow/option-maps';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
-import { useState } from 'react';
+import gsap from 'gsap';
+import { useEffect, useRef, useState } from 'react';
 import CouponFilterForm from '../forms/CouponFilterForm';
 import CouponForm from '../forms/CouponForm';
 import HeroBannerForm from '../forms/HeroBannerForm';
@@ -66,6 +67,22 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
       setPendingDelete(null);
     },
   });
+
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const cards = Array.from(containerRef.current.children) as HTMLElement[];
+    if (cards.length === 0) return;
+    gsap.from(cards, {
+      opacity: 0,
+      y: 20,
+      duration: 0.45,
+      stagger: 0.07,
+      ease: 'power2.out',
+      clearProps: 'all',
+    });
+  }, [itemsQuery.data]);
 
   const mutationError =
     createMutation.error ?? updateMutation.error ?? deleteMutation.error;
@@ -219,62 +236,51 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           },
         }));
 
-        if (collectionKey === 'coupons') {
-          return translatedItems.length === 0 ? (
+        if (translatedItems.length === 0) {
+          return (
             <p className={styles.empty}>
               Sin items todavía. Click en "Nuevo" para crear el primero.
             </p>
-          ) : (
-            <div>
-              {translatedItems.map((item) => (
-                <CouponCard
+          );
+        }
+
+        const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
+
+        return (
+          <div ref={containerRef}>
+            {translatedItems.map((item) => {
+              if (collectionKey === 'coupons') {
+                return (
+                  <CouponCard
+                    key={item.id}
+                    item={item}
+                    onEdit={setEditing}
+                    onDelete={setPendingDelete}
+                    deletingId={deletingId}
+                  />
+                );
+              }
+              if (collectionKey === 'couponFilterList') {
+                return (
+                  <CouponFilterCard
+                    key={item.id}
+                    item={item}
+                    onEdit={setEditing}
+                    onDelete={setPendingDelete}
+                    deletingId={deletingId}
+                  />
+                );
+              }
+              return (
+                <HeroBannerCard
                   key={item.id}
                   item={item}
                   onEdit={setEditing}
                   onDelete={setPendingDelete}
-                  deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
+                  deletingId={deletingId}
                 />
-              ))}
-            </div>
-          );
-        }
-
-        if (collectionKey === 'couponFilterList') {
-          return translatedItems.length === 0 ? (
-            <p className={styles.empty}>
-              Sin items todavía. Click en "Nuevo" para crear el primero.
-            </p>
-          ) : (
-            <div>
-              {translatedItems.map((item) => (
-                <CouponFilterCard
-                  key={item.id}
-                  item={item}
-                  onEdit={setEditing}
-                  onDelete={setPendingDelete}
-                  deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
-                />
-              ))}
-            </div>
-          );
-        }
-
-        // heroBanners — custom card view
-        return translatedItems.length === 0 ? (
-          <p className={styles.empty}>
-            Sin items todavía. Click en "Nuevo" para crear el primero.
-          </p>
-        ) : (
-          <div>
-            {translatedItems.map((item) => (
-              <HeroBannerCard
-                key={item.id}
-                item={item}
-                onEdit={setEditing}
-                onDelete={setPendingDelete}
-                deletingId={deleteMutation.isPending ? deleteMutation.variables : undefined}
-              />
-            ))}
+              );
+            })}
           </div>
         );
       })()}

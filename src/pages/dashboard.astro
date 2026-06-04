@@ -75,6 +75,16 @@ const counts = await Promise.all(
 
     <script>
       import { withBase } from '@lib/base-path';
+      import gsap from 'gsap';
+
+      gsap.from('.card', {
+        opacity: 0,
+        duration: 0.35,
+        stagger: 0.1,
+        ease: 'power2.out',
+        clearProps: 'all',
+      });
+
       document.querySelector('[data-signout]')?.addEventListener('click', async () => {
         await fetch(withBase('api/auth/sign-out'), {
           method: 'POST',
