@@ -51,7 +51,8 @@ async function toWebpSharp(bytes: Uint8Array, opts: WebpOptions): Promise<WebpRe
 }
 
 async function toWebpPhoton(bytes: Uint8Array, opts: WebpOptions): Promise<WebpResult> {
-  const { PhotonImage } = await import('@cf-wasm/photon');
+  // resize is a module-level function in @cf-wasm/photon, not an instance method
+  const { PhotonImage, resize: photonResize } = await import('@cf-wasm/photon');
   let image: InstanceType<typeof PhotonImage> | null = null;
   let resized: InstanceType<typeof PhotonImage> | null = null;
   try {
@@ -59,7 +60,6 @@ async function toWebpPhoton(bytes: Uint8Array, opts: WebpOptions): Promise<WebpR
     const w = image.get_width();
     const h = image.get_height();
 
-    let outImage: InstanceType<typeof PhotonImage> = image;
     let outW = w;
     let outH = h;
 
@@ -67,10 +67,10 @@ async function toWebpPhoton(bytes: Uint8Array, opts: WebpOptions): Promise<WebpR
       const ratio = Math.min(opts.maxDimension / w, opts.maxDimension / h);
       outW = Math.round(w * ratio);
       outH = Math.round(h * ratio);
-      resized = image.resize(outW, outH, 1); // 1 = Lanczos3
-      outImage = resized;
+      resized = photonResize(image, outW, outH, 1); // 1 = Lanczos3
     }
 
+    const outImage = resized ?? image;
     const webp = outImage.get_bytes_webp();
     return {
       bytes: webp,

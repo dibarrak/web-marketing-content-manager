@@ -67,8 +67,8 @@ export default function ImageDropzone({
       const list = Array.from(files);
       const uploaded: UploadedImage[] = [];
       for (const f of list) {
-        if (!f.type.startsWith('image/')) {
-          throw new Error(`Archivo no válido: ${f.name}`);
+        if (!f.type.startsWith('image/') || f.type === 'image/svg+xml') {
+          throw new Error(`Formato no soportado: ${f.name}. Usa JPEG, PNG, WebP o AVIF.`);
         }
         const u = await uploadOne(f);
         uploaded.push(u);
@@ -122,7 +122,7 @@ export default function ImageDropzone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
           multiple={multiple}
           hidden
           onChange={(e: ChangeEvent<HTMLInputElement>) => void handleFiles(e.target.files)}
