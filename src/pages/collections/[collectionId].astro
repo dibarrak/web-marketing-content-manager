@@ -1,6 +1,5 @@
 ---
-import '@styles/globals.scss';
-import BaseLayout from '@layouts/BaseLayout.astro';
+import AppLayout from '@layouts/AppLayout.astro';
 import CollectionPage from '@components/dashboard/CollectionPage';
 import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
 import { withBase } from '@lib/base-path';
@@ -19,7 +18,7 @@ const known = Object.values(COLLECTIONS).find((c) => c.collectionId === collecti
 if (!known) return Astro.redirect(withBase('dashboard'));
 ---
 
-<BaseLayout title={`${collection.displayName} — Webflow Content Manager`}>
+<AppLayout title={`${collection.displayName} — Webflow Content Manager`}>
   <CollectionPage
     client:only="react"
     collectionKey={known.key}
@@ -27,4 +26,4 @@ if (!known) return Astro.redirect(withBase('dashboard'));
     displayName={collection.displayName}
     singularName={collection.singularName}
   />
-</BaseLayout>
+</AppLayout>

@@ -1,0 +1,163 @@
+---
+import { withBase } from '@lib/base-path';
+
+const user = Astro.locals.user;
+const path = Astro.url.pathname;
+const isDashboard = path.includes('/dashboard') || !path.includes('/collections') && !path.includes('/audit-log');
+const isAudit = path.includes('/audit-log');
+---
+
+<nav class="navbar">
+  <div class="navbar-inner">
+
+    <div class="logo-area">
+      <img src={withBase('kueski-logo.svg')} alt="Kueski logo">
+    </div>
+
+    <div class="nav-links">
+      <a href={withBase('dashboard')} class:list={['nav-link', { active: isDashboard }]}>
+        Dashboard
+      </a>
+      <a href={withBase('audit-log')} class:list={['nav-link', { active: isAudit }]}>
+        Bitácora
+      </a>
+    </div>
+
+    {user && (
+      <div class="user-area">
+        <span class="user-info">
+          {user.name}
+          <span class="user-role">{user.role}</span>
+        </span>
+        <button type="button" class="signout-btn" data-signout>
+          Cerrar sesión
+        </button>
+      </div>
+    )}
+
+  </div>
+</nav>
+
+<script>
+  import { withBase } from '@lib/base-path';
+  document.querySelector('[data-signout]')?.addEventListener('click', async () => {
+    await fetch(withBase('api/auth/sign-out'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    window.location.href = withBase('login');
+  });
+</script>
+
+<style lang="scss">
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: $color-surface;
+  border-bottom: 1px solid $color-border;
+  box-shadow: $shadow-sm;
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 $space-6;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: $space-6;
+}
+
+.logo-area {
+  flex-shrink: 0;
+}
+
+.logo-placeholder {
+  width: 120px;
+  height: 32px;
+  border: 1.5px dashed $color-border;
+  border-radius: $radius-sm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: $color-text-muted;
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+  flex: 1;
+}
+
+.nav-link {
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  font-size: 14px;
+  font-weight: 500;
+  color: $color-text-muted;
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+
+  &:hover {
+    background: $color-bg-1;
+    color: $color-text;
+  }
+
+  &.active {
+    background: $color-primary-soft;
+    color: $color-primary;
+  }
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: 13px;
+  color: $color-text-muted;
+}
+
+.user-role {
+  background: $color-bg-1;
+  border: 1px solid $color-border;
+  border-radius: 999px;
+  padding: 2px $space-2;
+  font-size: 11px;
+  font-weight: 600;
+  color: $color-text;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.signout-btn {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+
+  &:hover {
+    background: $color-danger-soft;
+    color: $color-danger;
+    border-color: $color-danger;
+  }
+}
+</style>

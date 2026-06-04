@@ -1,11 +1,9 @@
 ---
-import '@styles/globals.scss';
-import BaseLayout from '@layouts/BaseLayout.astro';
+import AppLayout from '@layouts/AppLayout.astro';
 import { COLLECTIONS } from '@lib/config/sites';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
-import { Ticket, Tickets, BookX, Globe, LogOut, FileClock } from 'lucide-react';
-import IconShowcase from '@components/IconShowcase';
+import { Ticket, Tickets, BookX, Globe } from 'lucide-react';
 
 export const prerender = false;
 
@@ -36,21 +34,8 @@ const counts = await Promise.all(
 );
 ---
 
-<BaseLayout title="Dashboard — Webflow Content Manager">
+<AppLayout title="Dashboard — Webflow Content Manager">
   <main class="dashboard">
-      <header class="header">
-        <div>
-          <h1>Webflow Content Manager</h1>
-          <p class="muted">
-            {user.name} · {user.email} · rol: {user.role}
-          </p>
-        </div>
-        <div class="header-actions">
-          <a href={withBase('audit-log')} class="auditlink">Bitácora <FileClock size={16}></a>
-          <button type="button" class="signout" data-signout>Cerrar sesión <LogOut size={16}></button>
-        </div>
-      </header>
-
       <section class="grid">
         {
           collectionsList.map((c) => {
@@ -74,7 +59,6 @@ const counts = await Promise.all(
     </main>
 
     <script>
-      import { withBase } from '@lib/base-path';
       import gsap from 'gsap';
 
       gsap.from('.card', {
@@ -84,15 +68,6 @@ const counts = await Promise.all(
         ease: 'power2.out',
         clearProps: 'all',
       });
-
-      document.querySelector('[data-signout]')?.addEventListener('click', async () => {
-        await fetch(withBase('api/auth/sign-out'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}',
-        });
-        window.location.href = withBase('login');
-      });
     </script>
 
     <style lang="scss">
@@ -100,22 +75,6 @@ const counts = await Promise.all(
         max-width: 1080px;
         margin: $space-8 auto;
         padding: $space-6;
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: $space-8;
-
-        h1 {
-          margin: 0 0 $space-1;
-          font-size: 28px;
-        }
-      }
-      .muted {
-        margin: 0;
-        color: $color-text-muted;
-        font-size: 14px;
       }
       .site-id-tag {
         background-color: $color-bg-1;
@@ -162,30 +121,5 @@ const counts = await Promise.all(
         font-size: 13px;
         word-break: break-word;
       }
-      .header-actions {
-        display: flex;
-        gap: $space-3;
-        align-items: center;
-      }
-      .auditlink {
-        @include button-base;
-        background: transparent;
-        border: 1px solid $color-border;
-        color: $color-text;
-        text-decoration: none;
-        &:hover {
-          background: $color-bg;
-        }
-      }
-      .signout {
-        @include button-base;
-        background: $color-danger;
-        border: 1px solid $color-border;
-        color: $color-surface;
-        
-        &:hover {
-          background: $color-danger-hover;
-        }
-      }
     </style>
-</BaseLayout>
+</AppLayout>
