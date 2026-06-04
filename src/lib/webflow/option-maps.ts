@@ -18,6 +18,7 @@ const HERO_BANNER_OPTIONS: OptionMap = {
     '6ef2c8e925bd91c6fdb181bb347dd8e0': 'Temu',
     '0fee71c62bed91926ae4334df405ff9c': 'Promociones',
     e95e56ff92c94834b798a86e77b56080: 'Prototype',
+    bb2869d79b634bfd00004492bc097821: 'Registrate Hoy',
   },
   'variante-boton-creacion-cuenta': {
     '1defc227ac17f951af55f5d2300b59f3': 'primary',

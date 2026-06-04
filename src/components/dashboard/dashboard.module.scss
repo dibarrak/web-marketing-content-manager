@@ -33,10 +33,22 @@
   color: $color-text-muted;
   text-decoration: none;
   font-size: 14px;
-  display: inline-block;
+  display: inline-flex;
+  gap: 2px;
   margin-bottom: $space-3;
+
+  .backIcon {
+    position: relative;
+    left: 0;
+    transition: left 300ms ease
+  }
+
   &:hover {
     color: $color-text;
+
+    .backIcon {
+      left: -4px;
+    }
   }
 }
 
@@ -130,14 +142,45 @@
   max-width: 800px;
   background: $color-surface;
   border-radius: $radius-lg;
-  padding: $space-6;
+  padding: $space-6 $space-6 0 $space-6;
   box-shadow: $shadow-lg;
   overflow-y: auto;
   max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+  margin-bottom: $space-5;
+  flex-shrink: 0;
 
   h2 {
-    margin: 0 0 $space-5;
+    margin: 0;
     font-size: 20px;
+  }
+}
+
+.modalCloseBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-sm;
+  border: 1px solid $color-border;
+  background: transparent;
+  color: $color-text-muted;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+
+  &:hover {
+    background: $color-bg-1;
+    color: $color-text;
   }
 }
 

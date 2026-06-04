@@ -1,5 +1,6 @@
 ---
 import { withBase } from '@lib/base-path';
+import { LogOut } from 'lucide-react';
 
 const user = Astro.locals.user;
 const path = Astro.url.pathname;
@@ -30,7 +31,7 @@ const isAudit = path.includes('/audit-log');
           <span class="user-role">{user.role}</span>
         </span>
         <button type="button" class="signout-btn" data-signout>
-          Cerrar sesión
+          Cerrar sesión <LogOut size={16} />
         </button>
       </div>
     )}

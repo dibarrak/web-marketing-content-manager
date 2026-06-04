@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Fragment, useMemo, useState } from 'react';
 import QueryProvider from '../providers/QueryProvider';
 import styles from './dashboard.module.scss';
-import { MoveLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 interface AuditRow {
   id: string;
@@ -81,7 +81,7 @@ function AuditLogInner() {
   return (
     <main className={styles.page}>
       <a href={withBase('dashboard')} className={styles.back}>
-        <MoveLeft size={16} /> Volver al dashboard
+        <ArrowLeft className={styles.backIcon} size={16} /> Volver al dashboard
       </a>
       <header className={styles.toolbar}>
         <h1>Bitácora</h1>
