@@ -264,6 +264,83 @@
   p { margin-bottom: 0; }
 }
 
+// Image zoom wrapper — positions the ZoomIn button over the thumbnail
+.imagePreviewWrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+
+  &:hover .imageZoomBtn {
+    opacity: 1;
+  }
+}
+
+.imageZoomBtn {
+  position: absolute;
+  bottom: $space-1;
+  right: $space-1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-sm;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, background 150ms ease;
+  backdrop-filter: blur(2px);
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+// Full-screen image modal
+.imageModal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.85);
+  display: grid;
+  place-items: center;
+  padding: $space-8;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
+.imageModalClose {
+  position: absolute;
+  top: $space-4;
+  right: $space-4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-sm;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  cursor: pointer;
+  transition: background 150ms ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+.imageModalImg {
+  max-width: 100%;
+  max-height: 90dvh;
+  border-radius: $radius-md;
+  object-fit: contain;
+  cursor: default;
+  box-shadow: $shadow-lg;
+}
+
 // Image thumbnails row (desktop, mobile, logo)
 .bannerImages {
   display: flex;
@@ -273,12 +350,36 @@
 }
 
 .bannerImage {
-  p { margin-bottom: $space-1; }
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+}
 
-  img {
-    max-width: 120px;
-    border-radius: $radius-sm;
-    display: block;
+.bannerImageThumb {
+  display: block;
+  width: 120px;
+  aspect-ratio: 1 / 1;
+  border-radius: $radius-sm;
+  object-fit: contain;
+  border: 1px solid $color-border;
+  position: relative;
+  overflow: hidden;
+
+  &.noImage {
+    background-color: transparent;
+    border-color: $color-danger;
+
+    &::after {
+      content: '';
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(45deg);
+      width: 150%;
+      height: 2px;
+      background-color: $color-danger;
+    }
   }
 }
 

@@ -1,10 +1,11 @@
-import { Fragment, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { api } from '@lib/api-client';
-import QueryProvider from '../providers/QueryProvider';
-import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
 import { withBase } from '@lib/base-path';
+import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
+import { useQuery } from '@tanstack/react-query';
+import { Fragment, useMemo, useState } from 'react';
+import QueryProvider from '../providers/QueryProvider';
 import styles from './dashboard.module.scss';
+import { MoveLeft } from 'lucide-react';
 
 interface AuditRow {
   id: string;
@@ -80,7 +81,7 @@ function AuditLogInner() {
   return (
     <main className={styles.page}>
       <a href={withBase('dashboard')} className={styles.back}>
-        ← Volver al dashboard
+        <MoveLeft size={16} /> Volver al dashboard
       </a>
       <header className={styles.toolbar}>
         <h1>Bitácora</h1>

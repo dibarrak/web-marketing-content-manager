@@ -50,7 +50,7 @@ const counts = await Promise.all(
                 ) : (
                   <p class="count">{stat.total} items</p>
                 )}
-                <p class="muted site-id-tag"><Globe size={16}><span>{c.siteId}</span></p>
+                <p class="muted site-id-tag"><Globe size={16} /><span>{c.siteId}</span></p>
               </a>
             );
           })
@@ -62,11 +62,10 @@ const counts = await Promise.all(
       import gsap from 'gsap';
 
       gsap.from('.card', {
-        opacity: 0,
+        autoAlpha: 0,
         duration: 0.35,
         stagger: 0.1,
         ease: 'power2.out',
-        clearProps: 'all',
       });
     </script>
 

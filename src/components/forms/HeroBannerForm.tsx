@@ -1,20 +1,20 @@
-import { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { heroBannerSchema, type HeroBannerFields } from './schemas';
-import { TextField } from './fields/TextField';
-import { SelectField } from './fields/SelectField';
-import { SwitchField } from './fields/SwitchField';
+import { slugify } from '@lib/slug';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import AlternateColorField from './fields/AlternateColorField';
 import { ColorField } from './fields/ColorField';
-import SingleImageField from './fields/SingleImageField';
+import CouponDisplayField from './fields/CouponDisplayField';
+import fieldStyles from './fields/fields.module.scss';
 import HeaderImageField from './fields/HeaderImageField';
 import RichTextField from './fields/RichTextField';
-import CouponDisplayField from './fields/CouponDisplayField';
-import AlternateColorField from './fields/AlternateColorField';
-import FormErrorSummary from './FormErrorSummary';
-import { slugify } from '@lib/slug';
+import { SelectField } from './fields/SelectField';
+import SingleImageField from './fields/SingleImageField';
+import { SwitchField } from './fields/SwitchField';
+import { TextField } from './fields/TextField';
 import styles from './form.module.scss';
-import fieldStyles from './fields/fields.module.scss';
+import FormErrorSummary from './FormErrorSummary';
+import { heroBannerSchema, type HeroBannerFields } from './schemas';
 
 interface Props {
   collectionId: string;

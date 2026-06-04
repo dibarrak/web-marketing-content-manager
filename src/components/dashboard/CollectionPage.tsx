@@ -11,6 +11,7 @@ import { reverseTranslateOptionFields, translateOptionFields } from '@lib/webflo
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import gsap from 'gsap';
+import { CirclePlus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import CouponFilterForm from '../forms/CouponFilterForm';
 import CouponForm from '../forms/CouponForm';
@@ -204,7 +205,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
       <header className={styles.toolbar}>
         <h1>{displayName}</h1>
         <button type="button" className={styles.primary} onClick={() => setCreating(true)}>
-          + Nuevo {singularName.toLowerCase()}
+          <CirclePlus size={16} /> Nuevo {singularName.toLowerCase()}
         </button>
       </header>
 

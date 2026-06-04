@@ -1,5 +1,8 @@
 import type { WebflowItem } from "@lib/api-client";
-import { ExternalLink, EyeOff, EyeClosed, Eye, GlobeCheck } from 'lucide-react';
+import { ExternalLink, EyeOff, EyeClosed, Eye, GlobeCheck, ZoomIn, X } from 'lucide-react';
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import gsap from "gsap";
 import styles from "./collectionCard.module.scss";
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
@@ -91,6 +94,67 @@ function GradientPreview({ value }: { value: unknown }) {
   return <span className={styles.colorPreview} style={{ backgroundImage: gradient }} />;
 }
 
+function ImageZoomModal({ src, onClose }: { src: string; onClose: () => void }) {
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  useEffect(() => {
+    const backdrop = backdropRef.current;
+    const img = imgRef.current;
+    if (!backdrop || !img) return;
+    gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
+    gsap.fromTo(img, { scale: 0.88, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' });
+  }, []);
+
+  const handleClose = () => {
+    const backdrop = backdropRef.current;
+    const img = imgRef.current;
+    if (!backdrop || !img) { onClose(); return; }
+    gsap.to(img, { scale: 0.88, opacity: 0, duration: 0.2, ease: 'power2.in' });
+    gsap.to(backdrop, { opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: onClose });
+  };
+
+  return createPortal(
+    <div ref={backdropRef} className={styles.imageModal} onClick={handleClose}>
+      <button type="button" className={styles.imageModalClose} onClick={handleClose} aria-label="Cerrar">
+        <X size={20} />
+      </button>
+      <img
+        ref={imgRef}
+        src={src}
+        alt="Vista completa"
+        className={styles.imageModalImg}
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>,
+    document.body
+  );
+}
+
+function ImagePreview({ value, alt, onZoom }: { value: unknown; alt: string; onZoom: (url: string) => void }) {
+  if (typeof value === "string" && value.trim()) {
+    return (
+      <div className={styles.imagePreviewWrap}>
+        <img src={value} alt={alt} loading="lazy" className={styles.bannerImageThumb} />
+        <button
+          type="button"
+          className={styles.imageZoomBtn}
+          onClick={() => onZoom(value)}
+          aria-label="Ver imagen completa"
+        >
+          <ZoomIn size={16} />
+        </button>
+      </div>
+    );
+  }
+  return <span className={`${styles.bannerImageThumb} ${styles.noImage}`} />;
+}
+
 function ColorPreview({ value }: { value: unknown }) {
   const hex = extractHex(value);
   if (!hex) {
@@ -107,6 +171,7 @@ export default function HeroBannerCard({
   onDelete,
   deletingId,
 }: Props) {
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const f = item.fieldData;
   const display =
     typeof f["fechas-despliegue"] === "string"
@@ -179,35 +244,17 @@ export default function HeroBannerCard({
               {/* Image thumbnails */}
               <div className={styles.bannerImages}>
                 <div className={styles.bannerImage}>
-                  <p>
-                    <span className={styles.label}>Imagen desktop</span>
-                  </p>
-                  {typeof f["imagen-2"] === "string" ? (
-                    <img src={f["imagen-2"]} alt="Desktop" loading="lazy" />
-                  ) : (
-                    <span>—</span>
-                  )}
+                  <span className={styles.label}>Imagen desktop</span>
+                  <ImagePreview value={f["imagen-2"]} alt="Desktop" onZoom={setZoomedImage} />
                 </div>
-                {typeof f["imagen-mobile"] === "string" && (
-                  <div className={styles.bannerImage}>
-                    <p>
-                      <span className={styles.label}>Imagen mobile</span>
-                    </p>
-                    <img src={f["imagen-mobile"]} alt="Mobile" loading="lazy" />
-                  </div>
-                )}
-                {typeof f["logo-de-merchant"] === "string" && (
-                  <div className={styles.bannerImage}>
-                    <p>
-                      <span className={styles.label}>Logo</span>
-                    </p>
-                    <img
-                      src={f["logo-de-merchant"]}
-                      alt="Logo"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
+                <div className={styles.bannerImage}>
+                  <span className={styles.label}>Imagen mobile</span>
+                  <ImagePreview value={f["imagen-mobile"]} alt="Mobile" onZoom={setZoomedImage} />
+                </div>
+                <div className={styles.bannerImage}>
+                  <span className={styles.label}>Logo</span>
+                  <ImagePreview value={f["logo-de-merchant"]} alt="Logo" onZoom={setZoomedImage} />
+                </div>
               </div>
             </div>
 
@@ -291,6 +338,10 @@ export default function HeroBannerCard({
       <div className={`${styles.sideStatus} ${styles[status]}`}>
         {STATUS_LABELS[status]}
       </div>
+
+      {zoomedImage && (
+        <ImageZoomModal src={zoomedImage} onClose={() => setZoomedImage(null)} />
+      )}
     </div>
   );
 }
