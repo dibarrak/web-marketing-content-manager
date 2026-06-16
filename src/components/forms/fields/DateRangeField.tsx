@@ -59,7 +59,6 @@ export default function DateRangeField({ label, value, onChange, required, error
             type="date"
             className={styles.input}
             value={startIso}
-            max={endIso || undefined}
             onChange={(e) => setStartIso(e.target.value)}
           />
         </label>

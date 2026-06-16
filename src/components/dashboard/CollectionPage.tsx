@@ -7,6 +7,7 @@ import {
 } from '@lib/api-client';
 import { withBase } from '@lib/base-path';
 import type { CollectionKey } from '@lib/config/sites';
+import { getDisplayField, getStatus } from '@lib/collection-status';
 import { reverseTranslateOptionFields, translateOptionFields } from '@lib/webflow/option-maps';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
@@ -19,6 +20,7 @@ import CouponForm from '../forms/CouponForm';
 import HeroBannerForm from '../forms/HeroBannerForm';
 import QueryProvider from '../providers/QueryProvider';
 import ConfirmDialog from './ConfirmDialog';
+import CollectionFilters, { DEFAULT_FILTERS, type FilterState } from './CollectionFilters';
 import CouponCard from './CouponCard';
 import CouponFilterCard from './CouponFilterCard';
 import HeroBannerCard from './HeroBannerCard';
@@ -83,6 +85,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   const [editing, setEditing] = useState<WebflowItem<AnyFields> | null>(null);
   const [creating, setCreating] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<AnyFields | undefined>(undefined);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [pendingDelete, setPendingDelete] = useState<WebflowItem<AnyFields> | null>(null);
 
   const itemsQuery = useQuery({
@@ -234,6 +237,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           onSubmit={onSubmitForm as never}
           onCancel={closeForm}
           submitting={submitting}
+          isEditing={!!editing}
         />
       );
     }
@@ -244,6 +248,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           onSubmit={onSubmitForm as never}
           onCancel={closeForm}
           submitting={submitting}
+          isEditing={!!editing}
         />
       );
     }
@@ -254,6 +259,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
         onSubmit={onSubmitForm as never}
         onCancel={closeForm}
         submitting={submitting}
+        isEditing={!!editing}
       />
     );
   };
@@ -306,47 +312,106 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           );
         }
 
+        const stripHtml = (html: string) => html.replace(/<[^>]+>/g, '');
+
+        const filteredItems = translatedItems
+          .filter((item) => {
+            if (filters.search) {
+              const q = filters.search.toLowerCase();
+              if (collectionKey === 'heroBanners') {
+                const title = stripHtml(String(item.fieldData['titulo'] ?? '')).toLowerCase();
+                const name = item.fieldData.name.toLowerCase();
+                if (!title.includes(q) && !name.includes(q)) return false;
+              } else {
+                if (!item.fieldData.name.toLowerCase().includes(q)) return false;
+              }
+            }
+            if (filters.status) {
+              const display = getDisplayField(collectionKey, item.fieldData);
+              if (getStatus(display) !== filters.status) return false;
+            }
+            if (filters.siteDestination && collectionKey === 'heroBanners') {
+              if (item.fieldData['pagina-despliegue'] !== filters.siteDestination) return false;
+            }
+            return true;
+          })
+          .sort((a, b) => {
+            const aTs = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+            const bTs = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+            return filters.sortOrder === 'asc' ? aTs - bTs : bTs - aTs;
+          });
+
         const deletingId = deleteMutation.isPending ? deleteMutation.variables : undefined;
 
         return (
-          <div ref={containerRef}>
-            {translatedItems.map((item) => {
-              if (collectionKey === 'coupons') {
-                return (
-                  <CouponCard
-                    key={item.id}
-                    item={item}
-                    onEdit={setEditing}
-                    onDelete={setPendingDelete}
-                    onDuplicate={handleDuplicate}
-                    deletingId={deletingId}
-                  />
-                );
-              }
-              if (collectionKey === 'couponFilterList') {
-                return (
-                  <CouponFilterCard
-                    key={item.id}
-                    item={item}
-                    onEdit={setEditing}
-                    onDelete={setPendingDelete}
-                    onDuplicate={handleDuplicate}
-                    deletingId={deletingId}
-                  />
-                );
-              }
-              return (
-                <HeroBannerCard
-                  key={item.id}
-                  item={item}
-                  onEdit={setEditing}
-                  onDelete={setPendingDelete}
-                  onDuplicate={handleDuplicate}
-                  deletingId={deletingId}
-                />
-              );
-            })}
-          </div>
+          <>
+            <CollectionFilters
+              collectionKey={collectionKey}
+              filters={filters}
+              onChange={setFilters}
+              resultCount={filteredItems.length}
+              totalCount={translatedItems.length}
+            />
+
+            {filteredItems.length === 0 ? (
+              <p className={styles.empty}>
+                Ningún item coincide con los filtros activos.{' '}
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                  onClick={() => setFilters(DEFAULT_FILTERS)}
+                >
+                  Limpiar filtros
+                </button>
+              </p>
+            ) : (
+              <>
+                {filteredItems.length < translatedItems.length && (
+                  <p className={styles.filterCount}>
+                    {filteredItems.length} de {translatedItems.length} items
+                  </p>
+                )}
+                <div ref={containerRef}>
+                  {filteredItems.map((item) => {
+                    if (collectionKey === 'coupons') {
+                      return (
+                        <CouponCard
+                          key={item.id}
+                          item={item}
+                          onEdit={setEditing}
+                          onDelete={setPendingDelete}
+                          onDuplicate={handleDuplicate}
+                          deletingId={deletingId}
+                        />
+                      );
+                    }
+                    if (collectionKey === 'couponFilterList') {
+                      return (
+                        <CouponFilterCard
+                          key={item.id}
+                          item={item}
+                          onEdit={setEditing}
+                          onDelete={setPendingDelete}
+                          onDuplicate={handleDuplicate}
+                          deletingId={deletingId}
+                        />
+                      );
+                    }
+                    return (
+                      <HeroBannerCard
+                        key={item.id}
+                        item={item}
+                        onEdit={setEditing}
+                        onDelete={setPendingDelete}
+                        onDuplicate={handleDuplicate}
+                        deletingId={deletingId}
+                      />
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
         );
       })()}
 

@@ -26,7 +26,7 @@ export interface UploadedAsset {
 
 function md5Hex(bytes: Uint8Array): string {
   const spark = new SparkMD5.ArrayBuffer();
-  spark.append(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+  spark.append((bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
   return spark.end();
 }
 
@@ -46,7 +46,7 @@ export function createAssetsApi(client: WebflowClient) {
   async function uploadToS3(asset: CreatedAsset, bytes: Uint8Array, contentType: string) {
     const form = new FormData();
     for (const [k, v] of Object.entries(asset.uploadDetails)) form.append(k, v);
-    form.append('file', new Blob([bytes], { type: contentType }));
+    form.append('file', new Blob([(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: contentType }));
 
     const res = await fetch(asset.uploadUrl, { method: 'POST', body: form });
     if (!res.ok && res.status !== 201 && res.status !== 204) {

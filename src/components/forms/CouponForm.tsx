@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { couponSchema, type CouponFields } from './schemas';
@@ -16,6 +16,7 @@ interface Props {
   onSubmit: (data: CouponFields) => Promise<void> | void;
   onCancel?: () => void;
   submitting?: boolean;
+  isEditing?: boolean;
 }
 
 const EMPTY: CouponFields = {
@@ -34,7 +35,10 @@ export default function CouponForm({
   onSubmit,
   onCancel,
   submitting,
+  isEditing,
 }: Props) {
+  const editMode = useRef(!!isEditing);
+
   const {
     register,
     control,
@@ -49,10 +53,10 @@ export default function CouponForm({
     shouldFocusError: false,
   });
 
-  // Slug is always derived from name (Webflow Designer behavior).
   const nameValue = watch('name');
   const slugValue = watch('slug');
   useEffect(() => {
+    if (editMode.current) return;
     setValue('slug', slugify(nameValue ?? ''), { shouldValidate: true });
   }, [nameValue, setValue]);
 
@@ -71,7 +75,11 @@ export default function CouponForm({
         <div className={fieldStyles.field}>
           <span className={fieldStyles.label}>Slug</span>
           <div className={fieldStyles.slugPreview}>{slugValue || '—'}</div>
-          <small className={fieldStyles.help}>Se genera automáticamente desde Name.</small>
+          <small className={fieldStyles.help}>
+            {editMode.current
+              ? 'El slug original se conserva al editar para no romper URLs existentes.'
+              : 'Se genera automáticamente desde Name.'}
+          </small>
           {errors.slug?.message && (
             <small className={fieldStyles.error}>{errors.slug.message}</small>
           )}

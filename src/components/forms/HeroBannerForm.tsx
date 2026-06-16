@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { slugify } from '@lib/slug';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import AlternateColorField from './fields/AlternateColorField';
 import { ColorField } from './fields/ColorField';
@@ -22,6 +22,7 @@ interface Props {
   onSubmit: (data: HeroBannerFields) => Promise<void> | void;
   onCancel?: () => void;
   submitting?: boolean;
+  isEditing?: boolean;
 }
 
 const PAGE_OPTIONS = ['Home', 'Amazon', 'Temu', 'Promociones', 'Prototype'] as const;
@@ -76,7 +77,10 @@ export default function HeroBannerForm({
   onSubmit,
   onCancel,
   submitting,
+  isEditing,
 }: Props) {
+  const editMode = useRef(!!isEditing);
+
   const {
     register,
     control,
@@ -94,6 +98,7 @@ export default function HeroBannerForm({
   const nameValue = watch('name');
   const slugValue = watch('slug');
   useEffect(() => {
+    if (editMode.current) return;
     setValue('slug', slugify(nameValue ?? ''), { shouldValidate: true });
   }, [nameValue, setValue]);
 
@@ -107,7 +112,11 @@ export default function HeroBannerForm({
           <div className={fieldStyles.field}>
             <span className={fieldStyles.label}>Slug</span>
             <div className={fieldStyles.slugPreview}>{slugValue || '—'}</div>
-            <small className={fieldStyles.help}>Se genera automáticamente desde Name.</small>
+            <small className={fieldStyles.help}>
+              {editMode.current
+                ? 'El slug original se conserva al editar para no romper URLs existentes.'
+                : 'Se genera automáticamente desde Name.'}
+            </small>
           </div>
         </div>
       </fieldset>

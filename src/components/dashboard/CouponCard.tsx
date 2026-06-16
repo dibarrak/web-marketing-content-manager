@@ -1,4 +1,5 @@
 import type { WebflowItem } from '@lib/api-client';
+import { getStatus, STATUS_LABELS } from '@lib/collection-status';
 import styles from './collectionCard.module.scss';
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
@@ -11,26 +12,7 @@ interface Props {
   deletingId?: string;
 }
 
-type StatusKey = 'active' | 'inactive' | 'hidden';
-
-const STATUS_LABELS: Record<StatusKey, string> = {
-  active: 'Activo',
-  inactive: 'Inactivo',
-  hidden: 'Oculto',
-};
-
 const MAX_MERCHANTS = 5;
-
-function getCouponStatus(display: string | undefined): StatusKey {
-  if (!display || display === 'hidden') return 'hidden';
-  const m = /^\[(\d{2})\/(\d{2})\/(\d{4})\] - \[(\d{2})\/(\d{2})\/(\d{4})\]$/.exec(display);
-  if (!m) return 'inactive';
-  const [, d1, mo1, y1, d2, mo2, y2] = m;
-  const start = new Date(+y1, +mo1 - 1, +d1);
-  const end = new Date(+y2, +mo2 - 1, +d2, 23, 59, 59, 999);
-  const now = new Date();
-  return now >= start && now <= end ? 'active' : 'inactive';
-}
 
 function DisplayValue({ value }: { value: string | undefined }) {
   if (!value || value === 'hidden') {
@@ -47,7 +29,7 @@ function DisplayValue({ value }: { value: string | undefined }) {
 export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deletingId }: Props) {
   const f = item.fieldData;
   const display = typeof f['coupon-display'] === 'string' ? f['coupon-display'] : undefined;
-  const status = getCouponStatus(display);
+  const status = getStatus(display);
 
   const rawMerchants = f['related-merchants'];
   const merchants = Array.isArray(rawMerchants)

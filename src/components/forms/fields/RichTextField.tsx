@@ -37,7 +37,7 @@ export default function RichTextField({
   // Sync external value updates (e.g. when editing an existing item).
   useEffect(() => {
     if (!editor) return;
-    if (value !== editor.getHTML()) editor.commands.setContent(value || '', { emitUpdate: false });
+    if (value !== editor.getHTML()) editor.commands.setContent(value || '', false);
   }, [value, editor]);
 
   const toggleLink = () => {

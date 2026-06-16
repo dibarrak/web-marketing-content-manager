@@ -102,7 +102,6 @@ export default function CouponDisplayField({
               type="date"
               className={styles.input}
               value={startIso}
-              max={endIso || undefined}
               onChange={(e) => setStartIso(e.target.value)}
             />
           </label>
