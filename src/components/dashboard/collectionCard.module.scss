@@ -181,6 +181,20 @@
   }
 }
 
+.duplicateBtn {
+  @include button-base;
+  background: $color-surface;
+  color: $color-text;
+  font-size: 14px;
+  padding: $space-2 $space-3;
+  border-radius: $radius-sm;
+  border: 1px solid $color-border;
+
+  &:hover:not(:disabled) {
+    background: $color-bg;
+  }
+}
+
 // ── Side status badge (vertical text on the right edge) ────────────────────────
 // The badge is absolutely positioned inside .item (overflow: hidden clips the corners).
 

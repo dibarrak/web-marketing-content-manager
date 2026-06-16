@@ -7,6 +7,7 @@ interface Props {
   item: WebflowItem<AnyFields>;
   onEdit: (item: WebflowItem<AnyFields>) => void;
   onDelete: (item: WebflowItem<AnyFields>) => void;
+  onDuplicate: (item: WebflowItem<AnyFields>) => void;
   deletingId?: string;
 }
 
@@ -40,7 +41,7 @@ function DisplayValue({ value }: { value: string | undefined }) {
   return <span className={styles.displayRange}>{value.replace(/[\[\]]/g, '')}</span>;
 }
 
-export default function CouponFilterCard({ item, onEdit, onDelete, deletingId }: Props) {
+export default function CouponFilterCard({ item, onEdit, onDelete, onDuplicate, deletingId }: Props) {
   const f = item.fieldData;
   const display = typeof f['coupon-display'] === 'string' ? f['coupon-display'] : undefined;
   const status = getStatus(display);
@@ -72,6 +73,13 @@ export default function CouponFilterCard({ item, onEdit, onDelete, deletingId }:
               <p>{lastUpdated}</p>
 
               <div className={styles.actions}>
+                <button
+                  type="button"
+                  className={styles.duplicateBtn}
+                  onClick={() => onDuplicate(item)}
+                >
+                  Duplicar
+                </button>
                 <button
                   type="button"
                   className={styles.editBtn}

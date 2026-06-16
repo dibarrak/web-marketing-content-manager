@@ -82,6 +82,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   const qc = useQueryClient();
   const [editing, setEditing] = useState<WebflowItem<AnyFields> | null>(null);
   const [creating, setCreating] = useState(false);
+  const [createDefaults, setCreateDefaults] = useState<AnyFields | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<WebflowItem<AnyFields> | null>(null);
 
   const itemsQuery = useQuery({
@@ -172,6 +173,17 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   const closeForm = () => {
     setCreating(false);
     setEditing(null);
+    setCreateDefaults(undefined);
+  };
+
+  const handleDuplicate = (item: WebflowItem<AnyFields>) => {
+    const source = translateOptionFields(collectionKey, item.fieldData) as AnyFields;
+    setCreateDefaults({
+      ...source,
+      name: `${source.name} (copia)`,
+      slug: `${source.slug}-copy`,
+    });
+    setCreating(true);
   };
 
   // Treat '', null, undefined as the same "empty" — Webflow returns null for
@@ -210,13 +222,15 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   const editingDefaults = editing
     ? (translateOptionFields(collectionKey, editing.fieldData) as unknown as AnyFields)
     : undefined;
+  // When duplicating, editingDefaults is undefined (no editing item), so fall back to createDefaults
+  const formDefaults = (editingDefaults ?? createDefaults) as never;
 
   const renderForm = () => {
     if (collectionKey === 'coupons') {
       return (
         <CouponForm
           collectionId={collectionId}
-          defaultValues={editingDefaults as never}
+          defaultValues={formDefaults}
           onSubmit={onSubmitForm as never}
           onCancel={closeForm}
           submitting={submitting}
@@ -226,7 +240,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
     if (collectionKey === 'couponFilterList') {
       return (
         <CouponFilterForm
-          defaultValues={editingDefaults as never}
+          defaultValues={formDefaults}
           onSubmit={onSubmitForm as never}
           onCancel={closeForm}
           submitting={submitting}
@@ -236,7 +250,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
     return (
       <HeroBannerForm
         collectionId={collectionId}
-        defaultValues={editingDefaults as never}
+        defaultValues={formDefaults}
         onSubmit={onSubmitForm as never}
         onCancel={closeForm}
         submitting={submitting}
@@ -304,6 +318,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                     item={item}
                     onEdit={setEditing}
                     onDelete={setPendingDelete}
+                    onDuplicate={handleDuplicate}
                     deletingId={deletingId}
                   />
                 );
@@ -315,6 +330,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                     item={item}
                     onEdit={setEditing}
                     onDelete={setPendingDelete}
+                    onDuplicate={handleDuplicate}
                     deletingId={deletingId}
                   />
                 );
@@ -325,6 +341,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                   item={item}
                   onEdit={setEditing}
                   onDelete={setPendingDelete}
+                  onDuplicate={handleDuplicate}
                   deletingId={deletingId}
                 />
               );

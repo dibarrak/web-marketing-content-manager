@@ -11,6 +11,7 @@ interface Props {
   item: WebflowItem<AnyFields>;
   onEdit: (item: WebflowItem<AnyFields>) => void;
   onDelete: (item: WebflowItem<AnyFields>) => void;
+  onDuplicate: (item: WebflowItem<AnyFields>) => void;
   deletingId?: string;
 }
 
@@ -169,6 +170,7 @@ export default function HeroBannerCard({
   item,
   onEdit,
   onDelete,
+  onDuplicate,
   deletingId,
 }: Props) {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -313,6 +315,13 @@ export default function HeroBannerCard({
               <p>{lastUpdated}</p>
 
               <div className={styles.bannerActions}>
+                <button
+                  type="button"
+                  className={styles.duplicateBtn}
+                  onClick={() => onDuplicate(item)}
+                >
+                  Duplicar
+                </button>
                 <button
                   type="button"
                   className={styles.editBtn}
