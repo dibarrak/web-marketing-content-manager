@@ -1,5 +1,6 @@
 import type { WebflowItem } from '@lib/api-client';
 import { getStatus, STATUS_LABELS } from '@lib/collection-status';
+import { CopyPlus, SquarePen, SquareX } from 'lucide-react';
 import styles from './collectionCard.module.scss';
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
@@ -101,14 +102,14 @@ export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deleti
                   className={styles.duplicateBtn}
                   onClick={() => onDuplicate(item)}
                 >
-                  Duplicar
+                  Duplicar <CopyPlus size={16} />
                 </button>
                 <button
                   type="button"
                   className={styles.editBtn}
                   onClick={() => onEdit(item)}
                 >
-                  Editar
+                  Editar <SquarePen size={16} />
                 </button>
                 <button
                   type="button"
@@ -116,7 +117,7 @@ export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deleti
                   onClick={() => onDelete(item)}
                   disabled={deletingId === item.id}
                 >
-                  {deletingId === item.id ? '…' : 'Borrar'}
+                  {deletingId === item.id ? '…' : 'Borrar'} <SquareX size={16} />
                 </button>
               </div>
             </div>

@@ -210,6 +210,13 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
       // (the only case where the user would expect slug to update).
       if (isEqual(original.name, values.name)) delete diff.slug;
 
+      // JSON.stringify drops `undefined` values, so Webflow would never receive
+      // the clear signal. Convert undefined → null so optional fields are
+      // explicitly cleared in Webflow when the user removes a value.
+      for (const k of Object.keys(diff)) {
+        if (diff[k] === undefined) diff[k] = null;
+      }
+
       if (Object.keys(diff).length === 0) {
         closeForm();
         return;

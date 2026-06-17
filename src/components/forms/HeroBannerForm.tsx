@@ -25,7 +25,7 @@ interface Props {
   isEditing?: boolean;
 }
 
-const PAGE_OPTIONS = ['Home', 'Amazon', 'Temu', 'Promociones', 'Prototype'] as const;
+const PAGE_OPTIONS = ['Home', 'Promociones', 'Registrate Hoy', 'Amazon', 'Temu', 'Prototype'] as const;
 const BUTTON_VARIANTS = [
   'primary',
   'secondary',
@@ -316,7 +316,7 @@ export default function HeroBannerForm({
                 options={BUTTON_VARIANTS}
                 placeholder="—"
                 value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value || undefined)}
+                onChange={(e) => field.onChange(e.target.value || null)}
               />
             )}
           />
@@ -337,7 +337,7 @@ export default function HeroBannerForm({
                 options={BUTTON_VARIANTS}
                 placeholder="—"
                 value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value || undefined)}
+                onChange={(e) => field.onChange(e.target.value || null)}
               />
             )}
           />
@@ -380,7 +380,7 @@ export default function HeroBannerForm({
                 options={GRADIENT_VARIANTS}
                 placeholder="—"
                 value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value || undefined)}
+                onChange={(e) => field.onChange(e.target.value || null)}
               />
             )}
           />

@@ -1,9 +1,10 @@
 import type { WebflowItem } from "@lib/api-client";
 import { getStatus, STATUS_LABELS } from "@lib/collection-status";
-import { ExternalLink, EyeOff, EyeClosed, Eye, GlobeCheck, ZoomIn, X } from 'lucide-react';
+import { ExternalLink, GlobeCheck, ZoomIn, X } from 'lucide-react';
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
+import { CopyPlus, SquarePen, SquareX } from 'lucide-react';
 import styles from "./collectionCard.module.scss";
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
@@ -268,6 +269,13 @@ export default function HeroBannerCard({
               <span className={styles.label}>Slug de Webflow</span>
               <p>{f.slug}</p>
 
+              {f["slide-order"] != null && (
+                <>
+                  <span className={styles.label}>Slide order</span>
+                  <p>{String(f["slide-order"])}</p>
+                </>
+              )}
+
               {/* Button details */}
               <div className={styles.buttonGroups}>
                 <div className={styles.buttonGroup}>
@@ -299,14 +307,14 @@ export default function HeroBannerCard({
                   className={styles.duplicateBtn}
                   onClick={() => onDuplicate(item)}
                 >
-                  Duplicar
+                  Duplicar <CopyPlus size={16} />
                 </button>
                 <button
                   type="button"
                   className={styles.editBtn}
                   onClick={() => onEdit(item)}
                 >
-                  Editar
+                  Editar <SquarePen size={16} />
                 </button>
                 <button
                   type="button"
@@ -314,7 +322,7 @@ export default function HeroBannerCard({
                   onClick={() => onDelete(item)}
                   disabled={deletingId === item.id}
                 >
-                  {deletingId === item.id ? "…" : "Borrar"}
+                  {deletingId === item.id ? "…" : "Borrar"} <SquareX size={16} />
                 </button>
               </div>
             </div>
