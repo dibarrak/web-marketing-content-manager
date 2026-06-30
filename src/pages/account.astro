@@ -1,0 +1,14 @@
+---
+import AppLayout from '@layouts/AppLayout.astro';
+import AccountView from '@components/account/AccountView';
+import { withBase } from '@lib/base-path';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+---
+
+<AppLayout title="Mi cuenta — Webflow Content Manager">
+  <AccountView client:load name={user.name} email={user.email} role={user.role} />
+</AppLayout>

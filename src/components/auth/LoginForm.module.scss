@@ -58,6 +58,17 @@
   }
 }
 
+.forgot {
+  align-self: flex-end;
+  color: $color-text-muted;
+  font-size: 13px;
+  text-decoration: none;
+  &:hover {
+    color: $color-primary;
+    text-decoration: underline;
+  }
+}
+
 .error {
   margin: 0;
   padding: $space-3;

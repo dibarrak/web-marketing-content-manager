@@ -7,6 +7,7 @@ import type { APIRoute } from 'astro';
 import { getWebflow } from '@lib/webflow';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
 import { findCollectionById } from '@lib/config/sites';
+import { canAccessCollection } from '@lib/authz';
 import { logAudit } from '@lib/audit';
 
 export const prerender = false;
@@ -15,11 +16,16 @@ function unauth() {
   return new Response('Unauthorized', { status: 401 });
 }
 
+function forbidden() {
+  return new Response('Forbidden', { status: 403 });
+}
+
 export const GET: APIRoute = async ({ params, locals }) => {
   if (!locals.user) return unauth();
   const { collectionId, itemId } = params as { collectionId: string; itemId: string };
   if (!findCollectionById(collectionId))
     return Response.json({ error: 'Unknown collection' }, { status: 404 });
+  if (!canAccessCollection(locals.user, collectionId)) return forbidden();
 
   try {
     const wf = getWebflow(locals.runtime.env);
@@ -36,6 +42,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   const { collectionId, itemId } = params as { collectionId: string; itemId: string };
   const collection = findCollectionById(collectionId);
   if (!collection) return Response.json({ error: 'Unknown collection' }, { status: 404 });
+  if (!canAccessCollection(user, collectionId)) return forbidden();
 
   const body = (await request.json().catch(() => null)) as {
     fieldData?: Record<string, unknown>;
@@ -73,6 +80,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   const { collectionId, itemId } = params as { collectionId: string; itemId: string };
   const collection = findCollectionById(collectionId);
   if (!collection) return Response.json({ error: 'Unknown collection' }, { status: 404 });
+  if (!canAccessCollection(user, collectionId)) return forbidden();
 
   try {
     const wf = getWebflow(locals.runtime.env);

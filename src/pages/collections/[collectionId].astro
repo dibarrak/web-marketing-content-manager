@@ -3,6 +3,7 @@ import AppLayout from '@layouts/AppLayout.astro';
 import CollectionPage from '@components/dashboard/CollectionPage';
 import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
 import { withBase } from '@lib/base-path';
+import { canAccessCollection } from '@lib/authz';
 
 export const prerender = false;
 
@@ -12,6 +13,8 @@ if (!user) return Astro.redirect(withBase('login'));
 const { collectionId } = Astro.params;
 const collection = collectionId ? findCollectionById(collectionId) : undefined;
 if (!collection) return Astro.redirect(withBase('dashboard'));
+if (!canAccessCollection(user, collection.collectionId))
+  return Astro.redirect(withBase('dashboard'));
 
 // safety: ensure key is one of our known keys
 const known = Object.values(COLLECTIONS).find((c) => c.collectionId === collection.collectionId);

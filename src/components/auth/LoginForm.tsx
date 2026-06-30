@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { signIn, signUp } from '@lib/auth-client';
+import { withBase } from '@lib/base-path';
 import styles from './LoginForm.module.scss';
 
 type Mode = 'signin' | 'signup';
@@ -74,6 +75,12 @@ export default function LoginForm({ next = '/dashboard' }: { next?: string }) {
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+
+      {mode === 'signin' && (
+        <a className={styles.forgot} href={withBase('forgot-password')}>
+          ¿Olvidaste tu contraseña?
+        </a>
+      )}
 
       {error && <p className={styles.error}>{error}</p>}
 

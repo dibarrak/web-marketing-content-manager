@@ -3,6 +3,7 @@ import AppLayout from '@layouts/AppLayout.astro';
 import { COLLECTIONS } from '@lib/config/sites';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
+import { canAccessCollection } from '@lib/authz';
 import { Ticket, Tickets, BookX, Globe } from 'lucide-react';
 
 export const prerender = false;
@@ -13,7 +14,10 @@ if (!user) return Astro.redirect(withBase('login'));
 const env = Astro.locals.runtime.env;
 const wf = getWebflow(env);
 
-const collectionsList = Object.values(COLLECTIONS);
+// Editors only see the collections they've been granted; admin/super-admin see all.
+const collectionsList = Object.values(COLLECTIONS).filter((c) =>
+  canAccessCollection(user, c.collectionId),
+);
 
 const collectionIconMap = {
   '695bfb101cc1337da4ec00af': Ticket,
@@ -36,6 +40,12 @@ const counts = await Promise.all(
 
 <AppLayout title="Dashboard — Webflow Content Manager">
   <main class="dashboard">
+      {collectionsList.length === 0 && (
+        <p class="no-access">
+          Aún no tienes secciones asignadas. Contacta a un administrador
+          (david.ibarra@kueski.com) para que te otorgue acceso.
+        </p>
+      )}
       <section class="grid">
         {
           collectionsList.map((c) => {
@@ -119,6 +129,13 @@ const counts = await Promise.all(
         color: $color-danger;
         font-size: 13px;
         word-break: break-word;
+      }
+      .no-access {
+        @include card;
+        padding: $space-5;
+        color: $color-text-muted;
+        font-size: 14px;
+        line-height: 1.5;
       }
     </style>
 </AppLayout>

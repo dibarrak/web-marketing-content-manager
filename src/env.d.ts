@@ -13,6 +13,13 @@ interface Env {
 
 declare namespace App {
   interface Locals extends Runtime {
-    user?: { id: string; email: string; name: string; role: string };
+    user?: {
+      id: string;
+      email: string;
+      name: string;
+      role: string;
+      // Parsed list of section keys for editors; null = full access.
+      allowedSections: string[] | null;
+    };
   }
 }

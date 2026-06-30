@@ -13,12 +13,14 @@
 import type { APIRoute } from 'astro';
 import { and, desc, eq, gte, like, lte, sql } from 'drizzle-orm';
 import { getDb, schema } from '@lib/db';
+import { canAccessSection } from '@lib/authz';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const user = locals.user;
   if (!user) return new Response('Unauthorized', { status: 401 });
+  if (!canAccessSection(user, 'auditLog')) return new Response('Forbidden', { status: 403 });
 
   const url = new URL(request.url);
   const userFilter = url.searchParams.get('user') ?? '';

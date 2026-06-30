@@ -1,0 +1,292 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.page {
+  max-width: 960px;
+  margin: $space-8 auto;
+  padding: $space-6;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-5;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.row {
+  @include card;
+  padding: $space-5;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $space-4;
+
+  @include md {
+    grid-template-columns: 220px 1fr auto;
+    align-items: start;
+  }
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .email {
+    color: $color-text-muted;
+    font-size: 13px;
+  }
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+}
+
+.roleSelect {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  font-size: 13px;
+  color: $color-text-muted;
+  max-width: 240px;
+
+  select {
+    padding: $space-2 $space-3;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    background: $color-surface;
+    color: $color-text;
+    font-size: 14px;
+    &:focus {
+      @include focus-ring;
+    }
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.sectionsLabel {
+  font-size: 13px;
+  color: $color-text-muted;
+}
+
+.sectionChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  padding: $space-1 $space-2;
+  border: 1px solid $color-border;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+
+  input {
+    margin: 0;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  align-items: flex-start;
+}
+
+.primary {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}
+
+.secondary {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover {
+    background: $color-bg-1;
+    color: $color-text;
+  }
+}
+
+.danger {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover:not(:disabled) {
+    background: $color-danger-soft;
+    color: $color-danger;
+    border-color: $color-danger;
+  }
+}
+
+.rowError {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: $color-danger;
+  font-size: 13px;
+}
+
+.selfNote {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: $color-text-muted;
+  font-size: 12px;
+}
+
+.errorBanner {
+  padding: $space-3;
+  background: $color-danger-soft;
+  border: 1px solid $color-danger;
+  color: $color-danger;
+  border-radius: $radius-md;
+  margin-bottom: $space-4;
+}
+
+/* Modals */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-4;
+  z-index: 60;
+}
+
+.modalCard {
+  @include card;
+  background: $color-surface;
+  padding: $space-6;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.modalHint {
+  margin: 0;
+  font-size: 13px;
+  color: $color-text-muted;
+  line-height: 1.5;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  font-size: 14px;
+  color: $color-text-muted;
+
+  input,
+  select {
+    padding: $space-3;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    font-size: 16px;
+    color: $color-text;
+    background: $color-surface;
+    &:focus {
+      @include focus-ring;
+    }
+  }
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+  margin-top: $space-2;
+}
+
+.modeTabs {
+  display: flex;
+  gap: $space-1;
+  border-bottom: 1px solid $color-border;
+}
+
+.tab,
+.tabActive {
+  @include button-base;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: $space-2 $space-3;
+  font-size: 14px;
+  color: $color-text-muted;
+}
+
+.tabActive {
+  color: $color-primary;
+  border-bottom-color: $color-primary;
+}
+
+.success {
+  margin: 0;
+  padding: $space-3;
+  background: $color-primary-soft;
+  border: 1px solid $color-primary;
+  color: $color-primary;
+  border-radius: $radius-md;
+  font-size: 14px;
+}
+
+.linkBox {
+  padding: $space-3;
+  background: $color-bg-1;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  word-break: break-all;
+
+  code {
+    font-size: 12px;
+    color: $color-text;
+  }
+}

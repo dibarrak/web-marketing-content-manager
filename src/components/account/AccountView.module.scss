@@ -1,0 +1,114 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.page {
+  max-width: 640px;
+  margin: $space-8 auto;
+  padding: $space-6;
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.card {
+  @include card;
+  padding: $space-5;
+}
+
+.cardTitle {
+  margin: 0 0 $space-4;
+  font-size: 16px;
+}
+
+.dataList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-4;
+  }
+  dt {
+    color: $color-text-muted;
+    font-size: 14px;
+  }
+  dd {
+    margin: 0;
+    font-size: 14px;
+    color: $color-text;
+  }
+}
+
+.roleBadge {
+  background: $color-primary-soft;
+  color: $color-primary;
+  border-radius: 999px;
+  padding: 2px $space-2;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  font-size: 14px;
+  color: $color-text-muted;
+
+  input {
+    padding: $space-3;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    font-size: 16px;
+    color: $color-text;
+    background: $color-surface;
+    &:focus {
+      @include focus-ring;
+    }
+  }
+}
+
+.submit {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  align-self: flex-start;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}
+
+.error {
+  margin: 0;
+  padding: $space-3;
+  background: $color-danger-soft;
+  border: 1px solid $color-danger;
+  color: $color-danger;
+  border-radius: $radius-md;
+  font-size: 14px;
+}
+
+.success {
+  margin: 0;
+  padding: $space-3;
+  background: $color-primary-soft;
+  border: 1px solid $color-primary;
+  color: $color-primary;
+  border-radius: $radius-md;
+  font-size: 14px;
+}

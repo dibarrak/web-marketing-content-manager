@@ -1,6 +1,24 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { admin } from 'better-auth/plugins';
+import { createAccessControl } from 'better-auth/plugins/access';
+import { defaultStatements } from 'better-auth/plugins/admin/access';
 import { getDb, schema } from './db';
+
+// Access-control roles for the admin plugin. Any role listed in `adminRoles`
+// MUST be defined here, so all three app roles are declared.
+const ac = createAccessControl(defaultStatements);
+const roles = {
+  // Full Better Auth admin permissions — may manage users.
+  'super-admin': ac.newRole({
+    user: ['create', 'list', 'set-role', 'ban', 'impersonate', 'delete', 'set-password', 'get', 'update'],
+    session: ['list', 'revoke', 'delete'],
+  }),
+  // App-level roles with no Better Auth user-management permissions; their
+  // content access is enforced separately in @lib/authz.
+  admin: ac.newRole({ user: [], session: [] }),
+  editor: ac.newRole({ user: [], session: [] }),
+};
 
 /**
  * Per-request Better Auth instance. The D1 binding lives in runtime env,
@@ -33,9 +51,24 @@ export function getAuth(env: Env) {
     },
     user: {
       additionalFields: {
-        role: { type: 'string', defaultValue: 'editor', input: false },
+        // JSON-encoded CollectionKey[] for editors; null = full access.
+        // input:false so it can't be self-assigned at signup — only the
+        // super-admin sets it through the admin endpoints.
+        allowedSections: { type: 'string', required: false, input: false },
       },
     },
+    plugins: [
+      admin({
+        ac,
+        roles,
+        // New self-signups land as 'editor' with no sections until a
+        // super-admin grants access.
+        defaultRole: 'editor',
+        // Only 'super-admin' may use the admin endpoints (listUsers,
+        // setRole, createUser, setUserPassword, …).
+        adminRoles: ['super-admin'],
+      }),
+    ],
   });
 }
 

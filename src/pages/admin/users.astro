@@ -1,0 +1,16 @@
+---
+import AppLayout from '@layouts/AppLayout.astro';
+import UsersAdmin from '@components/admin/UsersAdmin';
+import { withBase } from '@lib/base-path';
+import { isSuperAdmin } from '@lib/authz';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+if (!isSuperAdmin(user)) return Astro.redirect(withBase('dashboard'));
+---
+
+<AppLayout title="Usuarios — Webflow Content Manager">
+  <UsersAdmin client:load currentUserId={user.id} />
+</AppLayout>

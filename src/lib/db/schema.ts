@@ -7,7 +7,14 @@ export const users = sqliteTable('users', {
   emailVerified: integer('email_verified', { mode: 'boolean' }).default(false),
   name: text('name').notNull(),
   image: text('image'),
-  role: text('role').notNull().default('editor'), // 'admin' | 'editor'
+  role: text('role').notNull().default('editor'), // 'super-admin' | 'admin' | 'editor'
+  // JSON array of CollectionKey strings an editor may access (e.g. ["coupons"]).
+  // null = full access — used for super-admin/admin (role grants everything).
+  allowedSections: text('allowed_sections'),
+  // Fields required by the Better Auth `admin` plugin.
+  banned: integer('banned', { mode: 'boolean' }).default(false),
+  banReason: text('ban_reason'),
+  banExpires: integer('ban_expires', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -22,6 +29,8 @@ export const sessions = sqliteTable('sessions', {
   token: text('token').notNull().unique(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
+  // Set by the Better Auth `admin` plugin when an admin impersonates a user.
+  impersonatedBy: text('impersonated_by'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
@@ -46,6 +55,21 @@ export const verifications = sqliteTable('verifications', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }),
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
+});
+
+// Password reset tokens — for the super-admin "generate reset link" flow
+// (Modo B). The plaintext token lives only in the shared URL; we store its
+// SHA-256 hash. Single-use (usedAt) and time-limited (expiresAt).
+export const passwordResetTokens = sqliteTable('password_reset_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  usedAt: integer('used_at', { mode: 'timestamp' }),
+  createdBy: text('created_by').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
 // Audit log — append-only journal of every CRUD action.

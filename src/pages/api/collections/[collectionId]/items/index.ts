@@ -6,6 +6,7 @@ import type { APIRoute } from 'astro';
 import { getWebflow } from '@lib/webflow';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
 import { findCollectionById } from '@lib/config/sites';
+import { canAccessCollection } from '@lib/authz';
 import { logAudit } from '@lib/audit';
 
 export const prerender = false;
@@ -17,6 +18,8 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const collectionId = params.collectionId!;
   const collection = findCollectionById(collectionId);
   if (!collection) return Response.json({ error: 'Unknown collection' }, { status: 404 });
+  if (!canAccessCollection(user, collectionId))
+    return new Response('Forbidden', { status: 403 });
 
   const url = new URL(request.url);
   const limit = Number(url.searchParams.get('limit') ?? 100);
@@ -38,6 +41,8 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   const collectionId = params.collectionId!;
   const collection = findCollectionById(collectionId);
   if (!collection) return Response.json({ error: 'Unknown collection' }, { status: 404 });
+  if (!canAccessCollection(user, collectionId))
+    return new Response('Forbidden', { status: 403 });
 
   const body = (await request.json().catch(() => null)) as {
     fieldData?: Record<string, unknown>;

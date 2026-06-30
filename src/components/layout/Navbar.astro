@@ -1,11 +1,17 @@
 ---
 import { withBase } from '@lib/base-path';
+import { canAccessSection, isSuperAdmin } from '@lib/authz';
 import { LogOut } from 'lucide-react';
 
 const user = Astro.locals.user;
 const path = Astro.url.pathname;
-const isDashboard = path.includes('/dashboard') || !path.includes('/collections') && !path.includes('/audit-log');
 const isAudit = path.includes('/audit-log');
+const isAdmin = path.includes('/admin');
+const isAccount = path.includes('/account');
+const isDashboard = !isAudit && !isAdmin && !isAccount && !path.includes('/collections');
+
+const showAudit = canAccessSection(user, 'auditLog');
+const showUsers = isSuperAdmin(user);
 ---
 
 <nav class="navbar">
@@ -19,17 +25,24 @@ const isAudit = path.includes('/audit-log');
       <a href={withBase('dashboard')} class:list={['nav-link', { active: isDashboard }]}>
         Dashboard
       </a>
-      <a href={withBase('audit-log')} class:list={['nav-link', { active: isAudit }]}>
-        Bitácora
-      </a>
+      {showAudit && (
+        <a href={withBase('audit-log')} class:list={['nav-link', { active: isAudit }]}>
+          Bitácora
+        </a>
+      )}
+      {showUsers && (
+        <a href={withBase('admin/users')} class:list={['nav-link', { active: isAdmin }]}>
+          Usuarios
+        </a>
+      )}
     </div>
 
     {user && (
       <div class="user-area">
-        <span class="user-info">
+        <a href={withBase('account')} class:list={['user-info', { active: isAccount }]}>
           {user.name}
           <span class="user-role">{user.role}</span>
-        </span>
+        </a>
         <button type="button" class="signout-btn" data-signout>
           Cerrar sesión <LogOut size={16} />
         </button>
@@ -133,6 +146,20 @@ const isAudit = path.includes('/audit-log');
   gap: $space-2;
   font-size: 13px;
   color: $color-text-muted;
+  text-decoration: none;
+  padding: $space-1 $space-2;
+  border-radius: $radius-sm;
+  transition: background 120ms ease, color 120ms ease;
+
+  &:hover {
+    background: $color-bg-1;
+    color: $color-text;
+  }
+
+  &.active {
+    background: $color-primary-soft;
+    color: $color-primary;
+  }
 }
 
 .user-role {
