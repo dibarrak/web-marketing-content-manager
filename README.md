@@ -2,9 +2,19 @@
 
 Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupones, hero banners) con UI orientada a usuarios no técnicos, conversión automática a WEBP y bitácora de acciones. Se despliega en Webflow Cloud (Cloudflare Workers).
 
+## Funcionalidades
+
+- **Gestión de colecciones CMS**: alta, edición, duplicado y borrado de cupones, filtros de cupones y hero banners, con filtros y validación por formulario.
+- **Subida de imágenes**: conversión automática a WEBP en el edge; soporta subir varias imágenes a la vez.
+- **Directorio de comercios** (solo super-admin): catálogo interno de comercios (ID de organización, nombre y logo). El registro vive en D1 y el logo se hospeda como asset de Webflow. Alimenta el selector de logos del formulario de cupón para reutilizar logotipos sin volver a subirlos.
+  - En el cupón el logo se guarda como *snapshot* (`{url, alt}`): editar o borrar un comercio no altera los cupones existentes ni elimina assets de Webflow.
+- **Control de acceso por roles**: `super-admin` (acceso total + gestión de usuarios y comercios), `admin` (todas las secciones de contenido) y `editor` (limitado a secciones asignadas). Ver [src/lib/authz.ts](src/lib/authz.ts).
+- **Gestión de usuarios** (solo super-admin): alta de usuarios con contraseña temporal, cambio de rol/secciones y recuperación de contraseña (contraseña temporal o enlace de un solo uso).
+- **Bitácora de acciones**: journal append-only de todo el CRUD (crear/editar/borrar) con filtros por usuario, acción, colección y fecha.
+
 ## Stack
 
-- Astro 5 + React 18 + `@astrojs/cloudflare`
+- Astro 5 + React 19 + `@astrojs/cloudflare`
 - Cloudflare D1 (SQLite edge) + Drizzle ORM
 - Better Auth (sesiones cookie HttpOnly)
 - `@cf-wasm/photon` (conversión WEBP en Workers)
