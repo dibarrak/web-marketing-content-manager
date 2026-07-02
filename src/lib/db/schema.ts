@@ -72,6 +72,23 @@ export const passwordResetTokens = sqliteTable('password_reset_tokens', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 });
 
+// Merchants — internal directory of partner merchants, managed by super-admins.
+// The record lives here in D1; the logo itself is a Webflow asset (we store its
+// hosted URL + asset id). Coupons reference a merchant's logo as a snapshot
+// ({url, alt}), so editing/deleting a merchant never mutates existing coupons.
+export const merchants = sqliteTable('merchants', {
+  id: text('id').primaryKey(),
+  // Organization-generated identifier for the merchant (unique).
+  merchantId: text('merchant_id').notNull().unique(),
+  name: text('name').notNull(),
+  // Hosted URL of the logo asset in Webflow.
+  logoUrl: text('logo_url').notNull(),
+  // Webflow asset id — kept for future dedup/cleanup tooling.
+  logoAssetId: text('logo_asset_id'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
 // Audit log — append-only journal of every CRUD action.
 export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),

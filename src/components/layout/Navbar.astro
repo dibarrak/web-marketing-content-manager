@@ -6,6 +6,8 @@ import { LogOut } from 'lucide-react';
 const user = Astro.locals.user;
 const path = Astro.url.pathname;
 const isAudit = path.includes('/audit-log');
+const isUsers = path.includes('/admin/users');
+const isMerchants = path.includes('/admin/merchants');
 const isAdmin = path.includes('/admin');
 const isAccount = path.includes('/account');
 const isDashboard = !isAudit && !isAdmin && !isAccount && !path.includes('/collections');
@@ -31,7 +33,12 @@ const showUsers = isSuperAdmin(user);
         </a>
       )}
       {showUsers && (
-        <a href={withBase('admin/users')} class:list={['nav-link', { active: isAdmin }]}>
+        <a href={withBase('admin/merchants')} class:list={['nav-link', { active: isMerchants }]}>
+          Comercios
+        </a>
+      )}
+      {showUsers && (
+        <a href={withBase('admin/users')} class:list={['nav-link', { active: isUsers }]}>
           Usuarios
         </a>
       )}

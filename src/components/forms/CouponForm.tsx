@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { couponSchema, type CouponFields } from './schemas';
 import { TextField, TextAreaField } from './fields/TextField';
-import ImageDropzone from './fields/ImageDropzone';
+import MerchantImageField from './fields/MerchantImageField';
 import CouponDisplayField from './fields/CouponDisplayField';
 import FormErrorSummary from './FormErrorSummary';
 import { slugify } from '@lib/slug';
@@ -123,16 +123,15 @@ export default function CouponForm({
         control={control}
         name="related-merchants"
         render={({ field }) => (
-          <ImageDropzone
+          <MerchantImageField
             label="Related merchants"
             collectionId={collectionId}
             value={field.value ?? []}
             onChange={field.onChange}
-            multiple
             maxDimension={1200}
             required
             error={errors['related-merchants']?.message as string | undefined}
-            help="Sube los logos. Se convierten automáticamente a WEBP."
+            help="Sube los logos (se convierten a WEBP) o elige comercios ya registrados."
           />
         )}
       />

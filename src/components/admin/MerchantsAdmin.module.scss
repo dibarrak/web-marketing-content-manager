@@ -1,0 +1,223 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.page {
+  max-width: 960px;
+  margin: $space-8 auto;
+  padding: $space-6;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $space-5;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+  }
+}
+
+.search {
+  width: 100%;
+  padding: $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  color: $color-text;
+  font: inherit;
+  margin-bottom: $space-5;
+  &:focus {
+    @include focus-ring;
+  }
+}
+
+.empty {
+  color: $color-text-muted;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+}
+
+.row {
+  @include card;
+  padding: $space-4;
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: $space-4;
+}
+
+.logoThumb {
+  width: 56px;
+  height: 56px;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  background: $color-bg;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: $color-text-muted;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  .merchantId {
+    color: $color-text-muted;
+    font-size: 13px;
+    font-family: $font-mono;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  align-items: center;
+}
+
+.primary {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}
+
+.secondary {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover:not(:disabled) {
+    background: $color-bg-1;
+    color: $color-text;
+  }
+}
+
+.danger {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover:not(:disabled) {
+    background: $color-danger-soft;
+    color: $color-danger;
+    border-color: $color-danger;
+  }
+}
+
+.rowError {
+  margin: 0;
+  color: $color-danger;
+  font-size: 13px;
+}
+
+.errorBanner {
+  padding: $space-3;
+  background: $color-danger-soft;
+  border: 1px solid $color-danger;
+  color: $color-danger;
+  border-radius: $radius-md;
+  margin-bottom: $space-4;
+}
+
+/* Modal */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-4;
+  z-index: 60;
+}
+
+.modalCard {
+  @include card;
+  background: $color-surface;
+  padding: $space-6;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  font-size: 14px;
+  color: $color-text-muted;
+
+  input {
+    padding: $space-3;
+    border-radius: $radius-md;
+    border: 1px solid $color-border;
+    font-size: 16px;
+    color: $color-text;
+    background: $color-surface;
+    &:focus {
+      @include focus-ring;
+    }
+  }
+}
+
+.logoUpload {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+}
+
+.logoPreview {
+  width: 72px;
+  height: 72px;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  background: $color-bg;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-2;
+  margin-top: $space-2;
+}

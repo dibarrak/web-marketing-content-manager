@@ -15,6 +15,13 @@
       "when": 1782758466196,
       "tag": "0001_volatile_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783008193600,
+      "tag": "0002_remarkable_quasimodo",
+      "breakpoints": true
     }
   ]
 }
