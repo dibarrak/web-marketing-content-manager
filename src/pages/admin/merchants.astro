@@ -1,0 +1,17 @@
+---
+import AppLayout from '@layouts/AppLayout.astro';
+import MerchantsAdmin from '@components/admin/MerchantsAdmin';
+import { withBase } from '@lib/base-path';
+import { isSuperAdmin } from '@lib/authz';
+import { DEFAULT_SITE_ID } from '@lib/config/sites';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+if (!isSuperAdmin(user)) return Astro.redirect(withBase('dashboard'));
+---
+
+<AppLayout title="Comercios — Webflow Content Manager">
+  <MerchantsAdmin client:load siteId={DEFAULT_SITE_ID} />
+</AppLayout>

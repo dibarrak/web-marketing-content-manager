@@ -1,0 +1,194 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.pickerBar {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+}
+
+.orLabel {
+  color: $color-text-muted;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pickBtn {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+  &:hover {
+    background: $color-primary-soft;
+    border-color: $color-primary;
+    color: $color-primary;
+  }
+}
+
+/* Picker dialog */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-4;
+  z-index: 70;
+}
+
+.dialog {
+  @include card;
+  background: $color-surface;
+  padding: $space-5;
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow: hidden; // header/search/actions stay fixed; only .body scrolls
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.body {
+  flex: 1;
+  min-height: 0; // allow the flex child to shrink and scroll
+  overflow-y: auto;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+.closeBtn {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: $color-text-muted;
+  &:hover {
+    color: $color-text;
+  }
+}
+
+.search {
+  width: 100%;
+  padding: $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  color: $color-text;
+  font: inherit;
+  &:focus {
+    @include focus-ring;
+  }
+}
+
+.hint {
+  color: $color-text-muted;
+  font-size: 14px;
+  margin: 0;
+}
+
+.error {
+  color: $color-danger;
+  font-size: 13px;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: $space-3;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+
+  &:hover:not(:disabled) {
+    border-color: $color-primary;
+    background: $color-primary-soft;
+  }
+}
+
+.cardAdded {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cardLogo {
+  width: 100%;
+  max-width: 50px;
+  aspect-ratio: 1;
+  border-radius: $radius-infinite;
+  border: 1px solid $color-border;
+  background: $color-bg;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+
+.cardName {
+  font-size: 13px;
+  color: $color-text;
+  text-align: center;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.addedTag {
+  font-size: 11px;
+  color: $color-primary;
+  font-weight: 600;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: $space-3;
+  border-top: 1px solid $color-border;
+}
+
+.doneBtn {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  font-size: 14px;
+  padding: $space-2 $space-4;
+  &:hover {
+    background: $color-primary-hover;
+  }
+}

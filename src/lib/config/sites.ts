@@ -41,3 +41,18 @@ export const COLLECTIONS: Record<CollectionKey, CollectionConfig> = {
 export function findCollectionById(collectionId: string): CollectionConfig | undefined {
   return Object.values(COLLECTIONS).find((c) => c.collectionId === collectionId);
 }
+
+/** Every Webflow site id referenced by a known collection. */
+export const KNOWN_SITE_IDS: ReadonlySet<string> = new Set(
+  Object.values(COLLECTIONS).map((c) => c.siteId),
+);
+
+export function isKnownSiteId(siteId: string): boolean {
+  return KNOWN_SITE_IDS.has(siteId);
+}
+
+/**
+ * Default site for uploads that aren't tied to a specific collection (e.g.
+ * merchant logos). All collections currently live on the same site.
+ */
+export const DEFAULT_SITE_ID = COLLECTIONS.coupons.siteId;
