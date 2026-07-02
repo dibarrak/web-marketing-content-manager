@@ -41,6 +41,8 @@ export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deleti
   const visible = merchants.slice(0, MAX_MERCHANTS);
   const extra = merchants.length - MAX_MERCHANTS;
 
+  const couponTitle =
+    typeof f['coupon-title'] === 'string' ? f['coupon-title'] : '—';
   const description =
     typeof f['coupon-description'] === 'string' ? f['coupon-description'] : '—';
   const validityText =
@@ -60,7 +62,10 @@ export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deleti
               <span className={styles.label}>Nombre de cupón</span>
               <p className={styles.couponName}>{f.name}</p>
 
-              <span className={styles.label}>Título</span>
+              <span className={styles.label}>Título del cupón</span>
+              <p>{couponTitle}</p>
+
+              <span className={styles.label}>Descripción</span>
               <p>{description}</p>
 
               <span className={styles.label}>Texto vigencia</span>
