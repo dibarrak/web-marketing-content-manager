@@ -53,10 +53,16 @@
   width: 100%;
   max-width: 640px;
   max-height: 85vh;
-  overflow-y: auto;
+  overflow: hidden; // header/search/actions stay fixed; only .body scrolls
   display: flex;
   flex-direction: column;
   gap: $space-4;
+}
+
+.body {
+  flex: 1;
+  min-height: 0; // allow the flex child to shrink and scroll
+  overflow-y: auto;
 }
 
 .dialogHeader {
@@ -109,7 +115,7 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: $space-3;
 }
 
@@ -139,8 +145,10 @@
 
 .cardLogo {
   width: 100%;
+  max-width: 50px;
   aspect-ratio: 1;
-  border-radius: $radius-sm;
+  border-radius: $radius-infinite;
+  border: 1px solid $color-border;
   background: $color-bg;
   overflow: hidden;
   display: grid;
@@ -170,6 +178,8 @@
 .dialogActions {
   display: flex;
   justify-content: flex-end;
+  padding-top: $space-3;
+  border-top: 1px solid $color-border;
 }
 
 .doneBtn {

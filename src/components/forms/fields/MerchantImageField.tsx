@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { withBase } from '@lib/base-path';
 import type { MerchantOption } from '@lib/merchants';
 import ImageDropzone, { type UploadedImage } from './ImageDropzone';
@@ -121,7 +122,10 @@ function MerchantPicker({
       )
     : merchants;
 
-  return (
+  // Portal to <body> so the fixed backdrop escapes the coupon FormModal, whose
+  // GSAP transform would otherwise become the containing block for position:
+  // fixed — clipping the dialog and creating a nested scroll.
+  return createPortal(
     <div className={styles.backdrop} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.dialog}>
         <div className={styles.dialogHeader}>
@@ -140,39 +144,41 @@ function MerchantPicker({
           autoFocus
         />
 
-        {error && <p className={styles.error}>{error}</p>}
+        <div className={styles.body}>
+          {error && <p className={styles.error}>{error}</p>}
 
-        {loading ? (
-          <p className={styles.hint}>Cargando…</p>
-        ) : visible.length === 0 ? (
-          <p className={styles.hint}>
-            {merchants.length === 0
-              ? 'No hay comercios registrados. Un super-admin puede agregarlos en la sección Comercios.'
-              : 'Sin resultados.'}
-          </p>
-        ) : (
-          <div className={styles.grid}>
-            {visible.map((m) => {
-              const added = selectedUrls.has(m.logoUrl);
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`${styles.card} ${added ? styles.cardAdded : ''}`}
-                  disabled={added}
-                  onClick={() => onPick(m)}
-                  title={m.name}
-                >
-                  <div className={styles.cardLogo}>
-                    <img src={m.logoUrl} alt={m.name} />
-                  </div>
-                  <span className={styles.cardName}>{m.name}</span>
-                  {added && <span className={styles.addedTag}>Agregado</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
+          {loading ? (
+            <p className={styles.hint}>Cargando…</p>
+          ) : visible.length === 0 ? (
+            <p className={styles.hint}>
+              {merchants.length === 0
+                ? 'No hay comercios registrados. Un super-admin puede agregarlos en la sección Comercios.'
+                : 'Sin resultados.'}
+            </p>
+          ) : (
+            <div className={styles.grid}>
+              {visible.map((m) => {
+                const added = selectedUrls.has(m.logoUrl);
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`${styles.card} ${added ? styles.cardAdded : ''}`}
+                    disabled={added}
+                    onClick={() => onPick(m)}
+                    title={m.name}
+                  >
+                    <div className={styles.cardLogo}>
+                      <img src={m.logoUrl} alt={m.name} />
+                    </div>
+                    <span className={styles.cardName}>{m.name}</span>
+                    {added && <span className={styles.addedTag}>Agregado</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className={styles.dialogActions}>
           <button type="button" className={styles.doneBtn} onClick={onClose}>
@@ -180,6 +186,7 @@ function MerchantPicker({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
