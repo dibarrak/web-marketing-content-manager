@@ -29,7 +29,10 @@ export const couponSchema = z.object({
   'coupon-description': z.string().min(1, 'Requerido'),
   'coupon-validity-text': z.string().min(1, 'Requerido'),
   'related-merchants': z
-    .array(z.object({ url: imageUrl, alt: z.string().optional() }))
+    // Webflow returns `alt: null` for images without alt text, so use `.nullish()`
+    // (accepts null and undefined). `.optional()` would reject the null and mark
+    // existing images invalid when editing.
+    .array(z.object({ url: imageUrl, alt: z.string().nullish() }))
     .min(1, 'Sube al menos una imagen'),
   'coupon-display': couponDisplayField,
 });

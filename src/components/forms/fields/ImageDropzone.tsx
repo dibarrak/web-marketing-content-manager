@@ -4,7 +4,9 @@ import styles from './fields.module.scss';
 
 export interface UploadedImage {
   url: string;
-  alt?: string;
+  // Webflow returns `null` for images without alt text; accept it so existing
+  // images round-trip without a type mismatch.
+  alt?: string | null;
 }
 
 interface Props {
@@ -44,6 +46,13 @@ export default function ImageDropzone({
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Always holds the latest committed value. Kept in sync on every render so it
+  // survives re-renders and overlapping handleFiles() calls — appending against
+  // the stale `value` prop closure would drop images when several uploads run
+  // close together.
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   async function uploadOne(file: File): Promise<UploadedImage> {
     const form = new FormData();
     form.append('file', file);
@@ -63,19 +72,27 @@ export default function ImageDropzone({
     if (!files || files.length === 0) return;
     setLocalError(null);
     setUploading(true);
+    const list = Array.from(files);
+    const errors: string[] = [];
     try {
-      const list = Array.from(files);
-      const uploaded: UploadedImage[] = [];
       for (const f of list) {
         if (!f.type.startsWith('image/') || f.type === 'image/svg+xml') {
-          throw new Error(`Formato no soportado: ${f.name}. Usa JPEG, PNG, WebP o AVIF.`);
+          errors.push(`Formato no soportado: ${f.name}. Usa JPEG, PNG, WebP o AVIF.`);
+          continue;
         }
-        const u = await uploadOne(f);
-        uploaded.push(u);
+        try {
+          const u = await uploadOne(f);
+          // Commit each image as soon as it uploads, based on the latest value
+          // (valueRef, not the closure) so a later failure or an overlapping
+          // upload can't discard images that already succeeded.
+          const next = multiple ? [...valueRef.current, u] : [u];
+          valueRef.current = next;
+          onChange(next);
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : `Error al subir ${f.name}`);
+        }
       }
-      onChange(multiple ? [...value, ...uploaded] : uploaded.slice(0, 1));
-    } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Upload error');
+      if (errors.length > 0) setLocalError(errors.join(' '));
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
