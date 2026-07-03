@@ -9,6 +9,9 @@ const PUBLIC_PREFIXES = [
   '/api/auth',
   '/api/reset-password',
   '/api/diag',
+  // Ingesta de promociones desde Apps Script: no hay sesión de usuario;
+  // se protege con un secreto compartido validado dentro del endpoint.
+  '/api/benefits/ingest',
   '/_astro',
 ];
 

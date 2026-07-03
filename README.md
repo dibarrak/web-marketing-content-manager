@@ -12,6 +12,8 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
   - La publicación es **a nivel de sitio** (siteId): las colecciones que comparten sitio publican lo mismo, e incluye cualquier cambio pendiente en staging (incluido el Designer). Webflow limita a ~1 publicación por minuto.
 - **Control de acceso por roles**: `super-admin` (acceso total + gestión de usuarios y comercios), `admin` (todas las secciones de contenido + publicación) y `editor` (limitado a secciones asignadas). Ver [src/lib/authz.ts](src/lib/authz.ts).
 - **Gestión de usuarios** (solo super-admin): alta de usuarios con contraseña temporal, cambio de rol/secciones y recuperación de contraseña (contraseña temporal o enlace de un solo uso).
+- **Sincronización de Benefits desde Google Sheets** (admin y super-admin): la colección "Benefit x merchants (Landing)" se actualiza desde una fuente de verdad en Google Sheets. Un Apps Script extrae las promociones (cashback y cupón) y las **envía** (push) a `POST /api/benefits/ingest` (protegido con un secreto compartido); la plataforma guarda el snapshot en D1. La vista de Sincronización hace un **diff por `merchant-id`** contra Webflow (Nuevo / Cambiado / Sin cambios / Fuera de fuente), permite revisar campo por campo, seleccionar y aplicar.
+  - Se usa **PATCH parcial**: el sync solo administra los bloques de cupón y cashback (y sus switches); nunca toca la promoción especial ni la referencia a landing. Los merchants ausentes del mes se apagan (soft-off). Aplica en *staging* y se publica con el control de publicación.
 - **Bitácora de acciones**: journal append-only de todo el CRUD y las publicaciones (crear/editar/borrar/publish) con filtros por usuario, acción, colección y fecha.
 - **UX de confirmaciones y avisos**: las acciones destructivas usan un diálogo de confirmación modal (`ConfirmDialog`); los resultados y estados se notifican con toasts (`sonner`).
 
@@ -58,12 +60,14 @@ pnpm dev
 
 1. Reemplaza en [src/lib/config/sites.ts](src/lib/config/sites.ts) los placeholders `REPLACE_WITH_SITE_ID_A` / `REPLACE_WITH_SITE_ID_B` con los `siteId` reales de Webflow.
 2. Reemplaza en [wrangler.toml](wrangler.toml) `REPLACE_WITH_REAL_D1_ID` con el ID devuelto por `wrangler d1 create`.
-3. Sube secretos a Workers (no van al repo):
+3. Sube secretos a Workers / variables de entorno de Webflow Cloud (no van al repo):
    ```bash
    pnpm wrangler secret put WEBFLOW_TOKEN
    pnpm wrangler secret put BETTER_AUTH_SECRET
    pnpm wrangler secret put BETTER_AUTH_URL
+   pnpm wrangler secret put BENEFITS_INGEST_SECRET  # secreto compartido con el Apps Script de Benefits
    ```
+   `BENEFITS_INGEST_SECRET` debe tener el **mismo valor** que la Script Property del Apps Script que envía las promociones. En local va en `.dev.vars`.
 
 ## Seguridad y Privacidad
 

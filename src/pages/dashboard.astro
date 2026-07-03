@@ -1,10 +1,10 @@
 ---
 import AppLayout from '@layouts/AppLayout.astro';
-import { COLLECTIONS } from '@lib/config/sites';
+import { COLLECTIONS, BENEFITS_COLLECTION } from '@lib/config/sites';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
-import { canAccessCollection } from '@lib/authz';
-import { Ticket, Tickets, BookX, Globe } from 'lucide-react';
+import { canAccessCollection, isAdmin } from '@lib/authz';
+import { Ticket, Tickets, BookX, Globe, RefreshCw } from 'lucide-react';
 
 export const prerender = false;
 
@@ -66,6 +66,20 @@ const counts = await Promise.all(
           })
         }
       </section>
+
+      {isAdmin(user) && (
+        <section class="admin-tools">
+          <h2 class="section-title">Sincronización</h2>
+          <div class="grid">
+            <a class="card" href={withBase('benefits/sync')}>
+              <RefreshCw size={32} />
+              <h2>{BENEFITS_COLLECTION.displayName}</h2>
+              <p class="muted">Sincroniza promociones desde Google Sheets</p>
+              <p class="muted site-id-tag"><Globe size={16} /><span>{BENEFITS_COLLECTION.siteId}</span></p>
+            </a>
+          </div>
+        </section>
+      )}
     </main>
 
     <script>
@@ -136,6 +150,20 @@ const counts = await Promise.all(
         color: $color-text-muted;
         font-size: 14px;
         line-height: 1.5;
+      }
+      .admin-tools {
+        margin-top: $space-8;
+      }
+      .section-title {
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: $color-text-muted;
+        margin: 0 0 $space-4;
+      }
+      .muted {
+        color: $color-text-muted;
+        font-size: 13px;
       }
     </style>
 </AppLayout>

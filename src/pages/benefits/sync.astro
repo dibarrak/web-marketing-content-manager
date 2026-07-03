@@ -1,0 +1,17 @@
+---
+import AppLayout from '@layouts/AppLayout.astro';
+import BenefitsSync from '@components/dashboard/BenefitsSync';
+import { BENEFITS_COLLECTION } from '@lib/config/sites';
+import { withBase } from '@lib/base-path';
+import { isAdmin } from '@lib/authz';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+if (!isAdmin(user)) return Astro.redirect(withBase('dashboard'));
+---
+
+<AppLayout title={`Sincronización — ${BENEFITS_COLLECTION.displayName}`}>
+  <BenefitsSync client:only="react" siteId={BENEFITS_COLLECTION.siteId} />
+</AppLayout>
