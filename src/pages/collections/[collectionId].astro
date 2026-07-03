@@ -3,7 +3,7 @@ import AppLayout from '@layouts/AppLayout.astro';
 import CollectionPage from '@components/dashboard/CollectionPage';
 import { COLLECTIONS, findCollectionById } from '@lib/config/sites';
 import { withBase } from '@lib/base-path';
-import { canAccessCollection } from '@lib/authz';
+import { canAccessCollection, isAdmin } from '@lib/authz';
 
 export const prerender = false;
 
@@ -28,5 +28,7 @@ if (!known) return Astro.redirect(withBase('dashboard'));
     collectionId={collection.collectionId}
     displayName={collection.displayName}
     singularName={collection.singularName}
+    siteId={known.siteId}
+    canPublish={isAdmin(user)}
   />
 </AppLayout>

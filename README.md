@@ -8,9 +8,12 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
 - **Subida de imágenes**: conversión automática a WEBP en el edge; soporta subir varias imágenes a la vez.
 - **Directorio de comercios** (solo super-admin): catálogo interno de comercios (ID de organización, nombre y logo). El registro vive en D1 y el logo se hospeda como asset de Webflow. Alimenta el selector de logos del formulario de cupón para reutilizar logotipos sin volver a subirlos.
   - En el cupón el logo se guarda como *snapshot* (`{url, alt}`): editar o borrar un comercio no altera los cupones existentes ni elimina assets de Webflow.
-- **Control de acceso por roles**: `super-admin` (acceso total + gestión de usuarios y comercios), `admin` (todas las secciones de contenido) y `editor` (limitado a secciones asignadas). Ver [src/lib/authz.ts](src/lib/authz.ts).
+- **Publicación de sitio** (admin y super-admin): desde cada colección, un botón flotante despliega opciones para publicar el sitio de Webflow a **staging** (subdominio `.webflow.io`) o a **producción** (dominios personalizados adjuntos, resueltos vía API). Evita tener que entrar a Webflow a publicar manualmente.
+  - La publicación es **a nivel de sitio** (siteId): las colecciones que comparten sitio publican lo mismo, e incluye cualquier cambio pendiente en staging (incluido el Designer). Webflow limita a ~1 publicación por minuto.
+- **Control de acceso por roles**: `super-admin` (acceso total + gestión de usuarios y comercios), `admin` (todas las secciones de contenido + publicación) y `editor` (limitado a secciones asignadas). Ver [src/lib/authz.ts](src/lib/authz.ts).
 - **Gestión de usuarios** (solo super-admin): alta de usuarios con contraseña temporal, cambio de rol/secciones y recuperación de contraseña (contraseña temporal o enlace de un solo uso).
-- **Bitácora de acciones**: journal append-only de todo el CRUD (crear/editar/borrar) con filtros por usuario, acción, colección y fecha.
+- **Bitácora de acciones**: journal append-only de todo el CRUD y las publicaciones (crear/editar/borrar/publish) con filtros por usuario, acción, colección y fecha.
+- **UX de confirmaciones y avisos**: las acciones destructivas usan un diálogo de confirmación modal (`ConfirmDialog`); los resultados y estados se notifican con toasts (`sonner`).
 
 ## Stack
 
@@ -21,13 +24,14 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
 - TipTap (WYSIWYG para RichText)
 - react-hook-form + Zod
 - TanStack Query + Axios
+- sonner (toasts)
 - SCSS + PNPM + TypeScript estricto
 
 ## Requisitos previos
 
 - Node 20+ y PNPM 11+
 - Cuenta Cloudflare con wrangler autenticado (`pnpm wrangler login`)
-- Token de Webflow API con scope CMS + Assets en los dos sitios
+- Token de Webflow API con scopes CMS + Assets + Sites (publicación) en los dos sitios
 
 ## Setup local
 

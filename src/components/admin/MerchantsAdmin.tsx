@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import type { Merchant } from '@lib/merchants';
+import ConfirmDialog from '../dashboard/ConfirmDialog';
 import styles from './MerchantsAdmin.module.scss';
 
 const api = (path = '') => withBase(`api/admin/merchants${path}`);
@@ -111,37 +113,62 @@ export default function MerchantsAdmin({ siteId }: Props) {
           }}
         />
       )}
+
+      <Toaster richColors position="top-center" />
     </main>
   );
 }
 
 function DeleteButton({ merchant, onDeleted }: { merchant: Merchant; onDeleted: () => void }) {
   const [busy, setBusy] = useState(false);
-  const remove = async () => {
-    if (
-      !confirm(
-        `¿Eliminar "${merchant.name}"? Los cupones que ya usan su logo no se verán afectados.`,
-      )
-    )
-      return;
+  const [confirming, setConfirming] = useState(false);
+
+  const doRemove = async () => {
     setBusy(true);
+    const toastId = toast.loading(`Eliminando "${merchant.name}"…`);
     try {
       const res = await fetch(api(`/${merchant.id}`), { method: 'DELETE' });
       if (!res.ok && res.status !== 204) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error ?? `Error ${res.status}`);
       }
+      toast.success('Comercio eliminado', { id: toastId, description: merchant.name });
       onDeleted();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error eliminando.');
+      toast.error('Error al eliminar', {
+        id: toastId,
+        description: err instanceof Error ? err.message : 'Intenta de nuevo.',
+      });
     } finally {
       setBusy(false);
     }
   };
+
   return (
-    <button type="button" className={styles.danger} disabled={busy} onClick={remove}>
-      Eliminar
-    </button>
+    <>
+      <button
+        type="button"
+        className={styles.danger}
+        disabled={busy}
+        onClick={() => setConfirming(true)}
+      >
+        Eliminar
+      </button>
+      <ConfirmDialog
+        open={confirming}
+        title="Eliminar comercio"
+        message={`¿Eliminar "${merchant.name}"? Los cupones que ya usan su logo no se verán afectados.`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        destructive
+        busy={busy}
+        onConfirm={async () => {
+          await doRemove();
+          setConfirming(false);
+        }}
+        onCancel={() => setConfirming(false)}
+      />
+    </>
   );
 }
 

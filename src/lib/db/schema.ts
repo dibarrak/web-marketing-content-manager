@@ -94,7 +94,7 @@ export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
   userEmail: text('user_email').notNull(),
-  action: text('action', { enum: ['create', 'update', 'delete'] }).notNull(),
+  action: text('action', { enum: ['create', 'update', 'delete', 'publish'] }).notNull(),
   siteId: text('site_id').notNull(),
   collectionId: text('collection_id').notNull(),
   itemId: text('item_id'),

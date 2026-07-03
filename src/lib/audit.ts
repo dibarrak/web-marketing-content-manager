@@ -2,7 +2,7 @@ import { getDb, schema } from './db';
 
 const newId = () => crypto.randomUUID();
 
-type Action = 'create' | 'update' | 'delete';
+type Action = 'create' | 'update' | 'delete' | 'publish';
 
 export interface AuditEntry {
   userId: string;

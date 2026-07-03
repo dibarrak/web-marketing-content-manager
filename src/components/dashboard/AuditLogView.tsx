@@ -11,7 +11,7 @@ interface AuditRow {
   id: string;
   userId: string;
   userEmail: string;
-  action: 'create' | 'update' | 'delete';
+  action: 'create' | 'update' | 'delete' | 'publish';
   siteId: string;
   collectionId: string;
   itemId: string | null;
@@ -30,6 +30,7 @@ const PAGE_SIZE = 50;
 function actionBadgeClass(action: AuditRow['action']) {
   if (action === 'create') return styles.badgeCreate;
   if (action === 'update') return styles.badgeUpdate;
+  if (action === 'publish') return styles.badgePublish;
   return styles.badgeDelete;
 }
 
@@ -113,6 +114,7 @@ function AuditLogInner() {
             <option value="create">create</option>
             <option value="update">update</option>
             <option value="delete">delete</option>
+            <option value="publish">publish</option>
           </select>
         </label>
         <label>

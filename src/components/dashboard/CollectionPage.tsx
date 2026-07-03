@@ -15,6 +15,7 @@ import gsap from 'gsap';
 import { CirclePlus, ArrowLeft, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Toaster } from 'sonner';
 import CouponFilterForm from '../forms/CouponFilterForm';
 import CouponForm from '../forms/CouponForm';
 import HeroBannerForm from '../forms/HeroBannerForm';
@@ -24,6 +25,7 @@ import CollectionFilters, { DEFAULT_FILTERS, type FilterState } from './Collecti
 import CouponCard from './CouponCard';
 import CouponFilterCard from './CouponFilterCard';
 import HeroBannerCard from './HeroBannerCard';
+import PublishControls from './PublishControls';
 import styles from './dashboard.module.scss';
 
 interface Props {
@@ -31,6 +33,8 @@ interface Props {
   collectionId: string;
   displayName: string;
   singularName: string;
+  siteId: string;
+  canPublish: boolean;
 }
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
@@ -80,7 +84,7 @@ function FormModal({ title, onClose, children }: { title: string; onClose: () =>
   );
 }
 
-function CollectionPageInner({ collectionKey, collectionId, displayName, singularName }: Props) {
+function CollectionPageInner({ collectionKey, collectionId, displayName, singularName, siteId, canPublish }: Props) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<WebflowItem<AnyFields> | null>(null);
   const [creating, setCreating] = useState(false);
@@ -283,6 +287,8 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
         </button>
       </header>
 
+      {canPublish && <PublishControls siteId={siteId} />}
+
       {errorMessage && (
         <div className={styles.errorBanner}>
           <strong>{errorMessage}</strong>
@@ -453,6 +459,7 @@ export default function CollectionPage(props: Props) {
   return (
     <QueryProvider>
       <CollectionPageInner {...props} />
+      {props.canPublish && <Toaster richColors position="top-center" />}
     </QueryProvider>
   );
 }

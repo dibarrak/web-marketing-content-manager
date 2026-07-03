@@ -1,0 +1,126 @@
+@use 'tokens' as *;
+@use 'mixins' as *;
+
+.container {
+  position: fixed;
+  right: $space-6;
+  bottom: $space-6;
+  z-index: 40; // below modals (50) and confirm dialog (100)
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: $space-3;
+}
+
+.fab {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: $radius-infinite;
+  border: none;
+  background: $color-primary;
+  color: white;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+
+  &:hover {
+    background: $color-primary-hover;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  // CSS tooltip to the left of the FAB.
+  &[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    background: #1f2937;
+    color: white;
+    font-size: 12px;
+    line-height: 1;
+    padding: $space-2 $space-3;
+    border-radius: $radius-md;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.menu {
+  @include card;
+  background: $color-surface;
+  padding: $space-3;
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  min-width: 220px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: menuIn 140ms ease;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuTitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: $color-text-muted;
+  padding: 0 $space-1 $space-1;
+}
+
+.staging,
+.production {
+  @include button-base;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  justify-content: flex-start;
+  font-size: 13px;
+  padding: $space-2 $space-3;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.staging {
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text;
+
+  &:hover:not(:disabled) {
+    background: $color-primary-soft;
+    border-color: $color-primary;
+    color: $color-primary;
+  }
+}
+
+.production {
+  background: $color-primary;
+  border: 1px solid $color-primary;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+  }
+}

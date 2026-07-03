@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import { EDITOR_ASSIGNABLE_SECTIONS, ROLE_LABELS, type Role } from '@lib/authz';
 import { COLLECTIONS } from '@lib/config/sites';
+import ConfirmDialog from '../dashboard/ConfirmDialog';
 import styles from './UsersAdmin.module.scss';
 
 interface AdminUser {
@@ -85,6 +87,8 @@ export default function UsersAdmin({ currentUserId }: { currentUserId: string })
       {resetFor && (
         <ResetPasswordModal user={resetFor} onClose={() => setResetFor(null)} />
       )}
+
+      <Toaster richColors position="top-center" />
     </main>
   );
 }
@@ -104,6 +108,7 @@ function UserRow({
   const [sections, setSections] = useState<string[]>(user.allowedSections ?? []);
   const [saving, setSaving] = useState(false);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const dirty =
     role !== user.role ||
@@ -138,23 +143,29 @@ function UserRow({
     }
   };
 
-  const remove = async () => {
-    if (!confirm(`¿Eliminar a ${user.email}? Esta acción no se puede deshacer.`)) return;
+  const doRemove = async () => {
     setSaving(true);
     setRowError(null);
+    const toastId = toast.loading(`Eliminando a ${user.email}…`);
     try {
       const res = await fetch(api(`users/${user.id}`), { method: 'DELETE' });
       if (!res.ok && res.status !== 204) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(data?.error ?? `Error ${res.status}`);
       }
+      toast.success(`Usuario eliminado`, { id: toastId, description: user.email });
       onChanged();
     } catch (err) {
-      setRowError(err instanceof Error ? err.message : 'Error eliminando.');
+      toast.error('Error al eliminar', {
+        id: toastId,
+        description: err instanceof Error ? err.message : 'Intenta de nuevo.',
+      });
     } finally {
       setSaving(false);
     }
   };
+
+  const remove = () => setConfirmingDelete(true);
 
   return (
     <div className={styles.row}>
@@ -219,6 +230,21 @@ function UserRow({
 
       {rowError && <p className={styles.rowError}>{rowError}</p>}
       {isSelf && <p className={styles.selfNote}>Esta es tu cuenta.</p>}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Eliminar usuario"
+        message={`¿Eliminar a ${user.email}? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        destructive
+        busy={saving}
+        onConfirm={async () => {
+          await doRemove();
+          setConfirmingDelete(false);
+        }}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   );
 }
