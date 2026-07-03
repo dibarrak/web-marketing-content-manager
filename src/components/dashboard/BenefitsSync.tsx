@@ -24,6 +24,7 @@ interface DiffEntry {
   itemId?: string;
   isCreate: boolean;
   changes: FieldChange[];
+  summary?: { cupon?: string; cashback?: string };
   warnings?: string[];
 }
 
@@ -46,8 +47,10 @@ const ACTIONABLE: ChangeStatus[] = ['new', 'changed', 'out_of_source'];
 // Selected by default. "new" is excluded on purpose: a merchant absent from the
 // collection usually means its landing page doesn't exist yet.
 const DEFAULT_SELECTED: ChangeStatus[] = ['changed', 'out_of_source'];
-// Shown in the table (drafts included as read-only, informational rows).
-const DISPLAYED: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft'];
+// All statuses, in the order shown as filter chips.
+const ALL_STATUSES: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft', 'unchanged'];
+// Statuses visible by default (everything except the noisy "unchanged").
+const DEFAULT_VISIBLE: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft'];
 
 function fmt(v: unknown): string {
   if (v === true) return 'Sí';
@@ -70,6 +73,10 @@ export default function BenefitsSync({ siteId }: Props) {
   const [confirmApply, setConfirmApply] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState('');
+  const [visibleStatuses, setVisibleStatuses] = useState<Set<ChangeStatus>>(
+    new Set(DEFAULT_VISIBLE),
+  );
 
   useEffect(() => {
     (async () => {
@@ -106,10 +113,15 @@ export default function BenefitsSync({ siteId }: Props) {
     }
   };
 
-  const displayEntries = useMemo(
-    () => (report ? report.entries.filter((e) => DISPLAYED.includes(e.status)) : []),
-    [report],
-  );
+  const displayEntries = useMemo(() => {
+    if (!report) return [];
+    const q = query.trim().toLowerCase();
+    return report.entries.filter(
+      (e) =>
+        visibleStatuses.has(e.status) &&
+        (!q || e.name.toLowerCase().includes(q) || e.merchantId.toLowerCase().includes(q)),
+    );
+  }, [report, query, visibleStatuses]);
   const actionableEntries = useMemo(
     () => displayEntries.filter((e) => ACTIONABLE.includes(e.status)),
     [displayEntries],
@@ -213,12 +225,36 @@ export default function BenefitsSync({ siteId }: Props) {
 
       {report && (
         <>
-          <div className={styles.counts}>
-            {(Object.keys(STATUS_LABEL) as ChangeStatus[]).map((s) => (
-              <span key={s} className={`${styles.countBadge} ${styles[s]}`}>
-                {report.counts[s]} {STATUS_LABEL[s].toLowerCase()}
-              </span>
-            ))}
+          <div className={styles.filterBar}>
+            <input
+              className={styles.search}
+              type="search"
+              placeholder="Buscar por nombre o merchant-id…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className={styles.counts}>
+              {ALL_STATUSES.map((s) => {
+                const active = visibleStatuses.has(s);
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`${styles.countBadge} ${styles[s]} ${active ? styles.chipActive : styles.chipOff}`}
+                    aria-pressed={active}
+                    onClick={() =>
+                      setVisibleStatuses((prev) => {
+                        const next = new Set(prev);
+                        next.has(s) ? next.delete(s) : next.add(s);
+                        return next;
+                      })
+                    }
+                  >
+                    {report.counts[s]} {STATUS_LABEL[s].toLowerCase()}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {selectedNewCount > 0 && (
@@ -240,6 +276,7 @@ export default function BenefitsSync({ siteId }: Props) {
                   </th>
                   <th>Estado</th>
                   <th>Merchant</th>
+                  <th>Promo a aplicar</th>
                   <th>Cambios</th>
                 </tr>
               </thead>
@@ -272,6 +309,22 @@ export default function BenefitsSync({ siteId }: Props) {
                           ))}
                         </td>
                         <td>
+                          {e.status === 'out_of_source' ? (
+                            <span className={styles.promoOff}>Apagar promociones</span>
+                          ) : e.summary?.cupon || e.summary?.cashback ? (
+                            <div className={styles.promoValues}>
+                              {e.summary?.cupon && (
+                                <span className={styles.promoTag}>Cupón: {e.summary.cupon}</span>
+                              )}
+                              {e.summary?.cashback && (
+                                <span className={styles.promoTag}>Cashback: {e.summary.cashback}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className={styles.merchantId}>—</span>
+                          )}
+                        </td>
+                        <td>
                           <button
                             type="button"
                             className={styles.expandBtn}
@@ -285,7 +338,7 @@ export default function BenefitsSync({ siteId }: Props) {
                       {isOpen && (
                         <tr className={styles.detailRow}>
                           <td />
-                          <td colSpan={3}>
+                          <td colSpan={4}>
                             <ul className={styles.changeList}>
                               {e.changes.map((c) => (
                                 <li key={c.field}>

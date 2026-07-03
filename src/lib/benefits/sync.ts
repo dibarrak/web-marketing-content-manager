@@ -99,6 +99,8 @@ export interface DiffEntry {
   changes: FieldChange[];
   /** Payload to send: full fieldData for create, partial for update. */
   fieldData: Record<string, unknown>;
+  /** Target promo values for this merchant (what will be set), for display. */
+  summary?: { cupon?: string; cashback?: string };
   warnings?: string[];
 }
 
@@ -240,6 +242,7 @@ function equals(desired: string | boolean, current: unknown): boolean {
 function diffMerchant(m: MergedMerchant, item: ExistingItem | undefined): DiffEntry {
   const desired = desiredFields(m);
   const warnings = m.warnings.length ? m.warnings : undefined;
+  const summary = { cupon: m.cupon?.valor, cashback: m.cashback?.valor };
 
   if (!item) {
     // New item: full fieldData (merchant-id + slug + owned fields).
@@ -255,6 +258,7 @@ function diffMerchant(m: MergedMerchant, item: ExistingItem | undefined): DiffEn
       isCreate: true,
       changes: desired.map((d) => ({ field: d.field, label: d.label, before: undefined, after: d.value })),
       fieldData,
+      summary,
       warnings,
     };
   }
@@ -282,6 +286,7 @@ function diffMerchant(m: MergedMerchant, item: ExistingItem | undefined): DiffEn
     isCreate: false,
     changes,
     fieldData: patch,
+    summary,
     warnings,
   };
 }

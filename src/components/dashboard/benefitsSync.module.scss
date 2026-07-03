@@ -93,11 +93,31 @@
   margin-bottom: $space-4;
 }
 
+.filterBar {
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+  margin-bottom: $space-4;
+}
+
+.search {
+  width: 100%;
+  max-width: 360px;
+  padding: $space-2 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-surface;
+  color: $color-text;
+  font: inherit;
+  &:focus {
+    @include focus-ring;
+  }
+}
+
 .counts {
   display: flex;
   gap: $space-2;
   flex-wrap: wrap;
-  margin-bottom: $space-4;
 }
 
 .countBadge {
@@ -106,6 +126,36 @@
   border-radius: $radius-infinite;
   background: $color-bg-1;
   color: $color-text-muted;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 120ms ease, border-color 120ms ease;
+}
+
+// Filter chip states.
+.chipActive {
+  border-color: currentColor;
+}
+
+.chipOff {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.promoValues {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.promoTag {
+  font-size: 13px;
+  font-weight: 500;
+  color: $color-text;
+}
+
+.promoOff {
+  font-size: 13px;
+  color: #92400e;
 }
 
 .empty {
