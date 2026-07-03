@@ -9,6 +9,11 @@ interface Env {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   PUBLIC_APP_NAME: string;
+  /**
+   * Shared secret validated by POST /api/benefits/ingest — the Apps Script
+   * extractor sends it so it can push promo snapshots without a user session.
+   */
+  BENEFITS_INGEST_SECRET: string;
 }
 
 declare namespace App {

@@ -89,6 +89,15 @@ export const merchants = sqliteTable('merchants', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
+// Benefits promo snapshots pushed from the Apps Script extractor. One row per
+// monthly tab; the latest push overwrites it. Read by the sync preview/apply.
+export const benefitsSnapshots = sqliteTable('benefits_snapshots', {
+  month: text('month').primaryKey(),
+  dataJson: text('data_json').notNull(),
+  pushedBy: text('pushed_by'),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+});
+
 // Audit log — append-only journal of every CRUD action.
 export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),

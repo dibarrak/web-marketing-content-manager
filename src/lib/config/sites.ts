@@ -56,3 +56,15 @@ export function isKnownSiteId(siteId: string): boolean {
  * merchant logos). All collections currently live on the same site.
  */
 export const DEFAULT_SITE_ID = COLLECTIONS.coupons.siteId;
+
+/**
+ * "Benefit x merchants (Landing)" collection. Managed through the Google Sheets
+ * sync flow (preview → apply), NOT the standard per-item CRUD, so it is kept
+ * out of COLLECTIONS to avoid the form/filter/option-map machinery. Access is
+ * gated to admin+ like publishing and the audit log.
+ */
+export const BENEFITS_COLLECTION = {
+  collectionId: '6903cb0fce2f16ce3863227c',
+  siteId: '614d688b383096276930acef',
+  displayName: 'Benefit x merchants (Landing)',
+} as const;
