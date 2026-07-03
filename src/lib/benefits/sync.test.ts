@@ -19,7 +19,7 @@ describe('mergeSource', () => {
     expect(merged[0].cashback?.valor).toBe('5%');
   });
 
-  it('warns on duplicate coupon rows for the same merchant and keeps the first', () => {
+  it('warns on duplicate coupon rows and keeps the highest value', () => {
     const data: WebAppResponse = {
       ok: true,
       cupon: [
@@ -28,7 +28,7 @@ describe('mergeSource', () => {
       ],
     };
     const merged = mergeSource(data);
-    expect(merged[0].cupon?.nombre).toBe('FIRST');
+    expect(merged[0].cupon?.nombre).toBe('SECOND');
     expect(merged[0].warnings.length).toBe(1);
   });
 
@@ -111,6 +111,47 @@ describe('computeDiff', () => {
 
   it('ignores out-of-source merchants whose switches are already off', () => {
     const existing = [item('7', { [F.cuponSwitch]: false, [F.cashbackSwitch]: false })];
+    const report = computeDiff({ ok: true, cupon: [] }, existing);
+    expect(report.entries).toHaveLength(0);
+  });
+
+  it('keeps the highest-value promotion on duplicate source rows', () => {
+    const data: WebAppResponse = {
+      ok: true,
+      cupon: [
+        { merchantId: '1', name: 'A', nombreCupon: 'LOW', valor: '10%', fechaInicio: 'x', fechaFin: 'y' },
+        { merchantId: '1', name: 'A', nombreCupon: 'HIGH', valor: '25%', fechaInicio: 'x', fechaFin: 'y' },
+        { merchantId: '1', name: 'A', nombreCupon: 'MID', valor: '15%', fechaInicio: 'x', fechaFin: 'y' },
+      ],
+    };
+    const merged = mergeSource(data);
+    expect(merged[0].cupon?.nombre).toBe('HIGH');
+    expect(merged[0].cupon?.valor).toBe('25%');
+  });
+
+  it('never modifies a draft item and marks it as draft', () => {
+    const existing: ExistingItem[] = [
+      {
+        id: 'd1',
+        isDraft: true,
+        fieldData: { [F.merchantId]: '1', name: 'M1', [F.cuponSwitch]: false, [F.cashbackSwitch]: false },
+      },
+    ];
+    const data: WebAppResponse = {
+      ok: true,
+      cupon: [{ merchantId: '1', name: 'M1', nombreCupon: 'X', valor: '10%', fechaInicio: 'a', fechaFin: 'b' }],
+    };
+    const report = computeDiff(data, existing);
+    expect(report.counts.draft).toBe(1);
+    const e = report.entries[0];
+    expect(e.status).toBe('draft');
+    expect(e.fieldData).toEqual({}); // nothing to apply
+  });
+
+  it('does not turn off switches on a draft that is absent from the source', () => {
+    const existing: ExistingItem[] = [
+      { id: 'd1', isDraft: true, fieldData: { [F.merchantId]: '7', name: 'M7', [F.cuponSwitch]: true } },
+    ];
     const report = computeDiff({ ok: true, cupon: [] }, existing);
     expect(report.entries).toHaveLength(0);
   });

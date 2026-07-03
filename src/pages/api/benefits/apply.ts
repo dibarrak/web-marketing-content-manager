@@ -66,8 +66,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   for (const merchantId of merchantIds) {
     const entry = entriesById.get(merchantId);
-    // Skip anything that is no longer actionable (unchanged or vanished).
-    if (!entry || entry.status === 'unchanged') continue;
+    // Only actionable statuses are applied. Drafts and unchanged are never
+    // touched, even if the client asked for them.
+    if (!entry || !['new', 'changed', 'out_of_source'].includes(entry.status)) continue;
     const action: 'create' | 'update' = entry.isCreate ? 'create' : 'update';
     try {
       let itemId = entry.itemId;

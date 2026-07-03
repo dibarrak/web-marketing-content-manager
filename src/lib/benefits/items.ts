@@ -11,7 +11,11 @@ export async function fetchAllBenefitItems(env: Env, collectionId: string): Prom
     const page = await wf.collections.list(collectionId, { limit, offset });
     const items = page.items ?? [];
     for (const it of items) {
-      all.push({ id: it.id, fieldData: it.fieldData as Record<string, unknown> });
+      all.push({
+        id: it.id,
+        isDraft: it.isDraft ?? false,
+        fieldData: it.fieldData as Record<string, unknown>,
+      });
     }
     if (items.length < limit) break;
     offset += limit;

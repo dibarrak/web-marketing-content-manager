@@ -8,7 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import PublishControls from './PublishControls';
 import styles from './benefitsSync.module.scss';
 
-type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source';
+type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source' | 'draft';
 
 interface FieldChange {
   field: string;
@@ -38,9 +38,16 @@ const STATUS_LABEL: Record<ChangeStatus, string> = {
   changed: 'Cambiado',
   unchanged: 'Sin cambios',
   out_of_source: 'Fuera de fuente',
+  draft: 'Draft (omitido)',
 };
 
+// Statuses the user can select and apply.
 const ACTIONABLE: ChangeStatus[] = ['new', 'changed', 'out_of_source'];
+// Selected by default. "new" is excluded on purpose: a merchant absent from the
+// collection usually means its landing page doesn't exist yet.
+const DEFAULT_SELECTED: ChangeStatus[] = ['changed', 'out_of_source'];
+// Shown in the table (drafts included as read-only, informational rows).
+const DISPLAYED: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft'];
 
 function fmt(v: unknown): string {
   if (v === true) return 'Sí';
@@ -84,10 +91,11 @@ export default function BenefitsSync({ siteId }: Props) {
     try {
       const res = await api.get<DiffReport>('/benefits/preview', { params: { month } });
       setReport(res.data);
-      // Pre-select all actionable entries.
+      // Pre-select changed + out-of-source. New merchants stay unchecked
+      // (likely no landing page yet).
       setSelected(
         new Set(
-          res.data.entries.filter((e) => ACTIONABLE.includes(e.status)).map((e) => e.merchantId),
+          res.data.entries.filter((e) => DEFAULT_SELECTED.includes(e.status)).map((e) => e.merchantId),
         ),
       );
       setExpanded(new Set());
@@ -98,9 +106,17 @@ export default function BenefitsSync({ siteId }: Props) {
     }
   };
 
-  const actionableEntries = useMemo(
-    () => (report ? report.entries.filter((e) => ACTIONABLE.includes(e.status)) : []),
+  const displayEntries = useMemo(
+    () => (report ? report.entries.filter((e) => DISPLAYED.includes(e.status)) : []),
     [report],
+  );
+  const actionableEntries = useMemo(
+    () => displayEntries.filter((e) => ACTIONABLE.includes(e.status)),
+    [displayEntries],
+  );
+  const selectedNewCount = useMemo(
+    () => actionableEntries.filter((e) => e.status === 'new' && selected.has(e.merchantId)).length,
+    [actionableEntries, selected],
   );
 
   const apply = async () => {
@@ -205,7 +221,15 @@ export default function BenefitsSync({ siteId }: Props) {
             ))}
           </div>
 
-          {actionableEntries.length === 0 ? (
+          {selectedNewCount > 0 && (
+            <div className={styles.warnBanner}>
+              ⚠ Seleccionaste {selectedNewCount} merchant(s) <strong>nuevos</strong>. Un merchant que
+              no existe en la colección normalmente <strong>aún no tiene su landing page generada</strong>;
+              al aplicarlo se creará el item de todas formas. Confirma que su landing exista antes de publicar.
+            </div>
+          )}
+
+          {displayEntries.length === 0 ? (
             <p className={styles.empty}>No hay cambios por aplicar para este mes. 🎉</p>
           ) : (
             <table className={styles.table}>
@@ -220,8 +244,9 @@ export default function BenefitsSync({ siteId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {actionableEntries.map((e) => {
+                {displayEntries.map((e) => {
                   const isOpen = expanded.has(e.merchantId);
+                  const selectable = ACTIONABLE.includes(e.status);
                   return (
                     <Fragment key={e.merchantId}>
                       <tr>
@@ -229,7 +254,9 @@ export default function BenefitsSync({ siteId }: Props) {
                           <input
                             type="checkbox"
                             checked={selected.has(e.merchantId)}
-                            onChange={() => toggle(e.merchantId)}
+                            disabled={!selectable}
+                            title={selectable ? undefined : 'Item en DRAFT: no se modifica'}
+                            onChange={() => selectable && toggle(e.merchantId)}
                           />
                         </td>
                         <td>

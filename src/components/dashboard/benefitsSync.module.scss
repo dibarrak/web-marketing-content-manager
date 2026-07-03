@@ -177,6 +177,22 @@
   color: #92400e;
 }
 
+.draft {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.warnBanner {
+  @include card;
+  padding: $space-3 $space-4;
+  margin-bottom: $space-4;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .expandBtn {
   display: inline-flex;
   align-items: center;

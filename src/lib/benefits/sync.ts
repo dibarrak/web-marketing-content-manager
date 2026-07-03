@@ -74,12 +74,13 @@ export interface MergedMerchant {
 
 export interface ExistingItem {
   id: string;
+  isDraft?: boolean;
   fieldData: Record<string, unknown>;
 }
 
 // ---- Diff output ----
 
-export type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source';
+export type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source' | 'draft';
 
 export interface FieldChange {
   field: string;
@@ -117,7 +118,28 @@ export function asBool(v: unknown): boolean {
   return v === true || v === 'true';
 }
 
-/** Merge the cashback + cupón tables into one entry per merchant-id. */
+/** Extract the leading numeric part of a value like "15%" → 15, or null. */
+export function numericValue(v: string): number | null {
+  const m = v.match(/(\d+(?:[.,]\d+)?)/);
+  return m ? parseFloat(m[1].replace(',', '.')) : null;
+}
+
+/**
+ * True when candidate should replace the current pick because it has a higher
+ * numeric value. Ties or unparseable candidates keep the current one.
+ */
+function higherValue(candidate: string, current: string): boolean {
+  const a = numericValue(candidate);
+  const b = numericValue(current);
+  if (a === null) return false;
+  if (b === null) return true;
+  return a > b;
+}
+
+/**
+ * Merge the cashback + cupón tables into one entry per merchant-id. On
+ * duplicates for the same merchant, keep the promotion with the HIGHEST value.
+ */
 export function mergeSource(data: WebAppResponse): MergedMerchant[] {
   const map = new Map<string, MergedMerchant>();
   const ensure = (merchantId: string, name: string): MergedMerchant => {
@@ -135,15 +157,19 @@ export function mergeSource(data: WebAppResponse): MergedMerchant[] {
     const id = normalize(c.merchantId);
     if (!id) continue;
     const m = ensure(id, normalize(c.name));
-    if (m.cupon) {
-      m.warnings.push(`Múltiples cupones para el merchant ${id}; se usa el primero.`);
+    const cand = {
+      nombre: normalize(c.nombreCupon),
+      valor: normalize(c.valor),
+      inicio: normalize(c.fechaInicio),
+      fin: normalize(c.fechaFin),
+    };
+    if (!m.cupon) {
+      m.cupon = cand;
     } else {
-      m.cupon = {
-        nombre: normalize(c.nombreCupon),
-        valor: normalize(c.valor),
-        inicio: normalize(c.fechaInicio),
-        fin: normalize(c.fechaFin),
-      };
+      if (higherValue(cand.valor, m.cupon.valor)) m.cupon = cand;
+      m.warnings.push(
+        `Múltiples cupones para ${id}; se conserva el de mayor valor (${m.cupon.valor}).`,
+      );
     }
   }
 
@@ -151,14 +177,18 @@ export function mergeSource(data: WebAppResponse): MergedMerchant[] {
     const id = normalize(cb.merchantId);
     if (!id) continue;
     const m = ensure(id, normalize(cb.name));
-    if (m.cashback) {
-      m.warnings.push(`Múltiples cashback para el merchant ${id}; se usa el primero.`);
+    const cand = {
+      valor: normalize(cb.valor),
+      inicio: normalize(cb.fechaInicio),
+      fin: normalize(cb.fechaFin),
+    };
+    if (!m.cashback) {
+      m.cashback = cand;
     } else {
-      m.cashback = {
-        valor: normalize(cb.valor),
-        inicio: normalize(cb.fechaInicio),
-        fin: normalize(cb.fechaFin),
-      };
+      if (higherValue(cand.valor, m.cashback.valor)) m.cashback = cand;
+      m.warnings.push(
+        `Múltiples cashback para ${id}; se conserva el de mayor valor (${m.cashback.valor}).`,
+      );
     }
   }
 
@@ -295,12 +325,21 @@ export function computeDiff(data: WebAppResponse, existing: ExistingItem[]): Dif
   const entries: DiffEntry[] = [];
 
   for (const m of merged) {
-    entries.push(diffMerchant(m, byMerchant.get(m.merchantId)));
+    const item = byMerchant.get(m.merchantId);
+    const entry = diffMerchant(m, item);
+    if (item?.isDraft) {
+      // DRAFT convention: the landing exists but isn't public. Never modify it;
+      // show it as informational only (its changes are visible but not applied).
+      entry.status = 'draft';
+      entry.fieldData = {};
+    }
+    entries.push(entry);
   }
 
   for (const it of existing) {
     const id = normalize(it.fieldData[F.merchantId]);
     if (!id || sourceIds.has(id)) continue;
+    if (it.isDraft) continue; // never touch drafts, even to turn switches off
     const off = diffOutOfSource(it);
     if (off) entries.push(off);
   }
@@ -310,6 +349,7 @@ export function computeDiff(data: WebAppResponse, existing: ExistingItem[]): Dif
     changed: 0,
     unchanged: 0,
     out_of_source: 0,
+    draft: 0,
   };
   for (const e of entries) counts[e.status]++;
 
