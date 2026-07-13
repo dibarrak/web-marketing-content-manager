@@ -277,6 +277,29 @@
       color: $color-primary;
       text-decoration: underline;
     }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: $radius-sm;
+      margin: $space-2 0;
+      &.ProseMirror-selectednode {
+        outline: 2px solid $color-primary;
+      }
+    }
+    h2 {
+      font-size: 1.3em;
+      margin: $space-3 0 $space-2;
+    }
+    h3 {
+      font-size: 1.15em;
+      margin: $space-3 0 $space-2;
+    }
+    blockquote {
+      border-left: 3px solid $color-border;
+      padding-left: $space-3;
+      color: $color-text-muted;
+      margin: $space-2 0;
+    }
   }
 }
 
@@ -289,4 +312,121 @@
   border-radius: $radius-sm;
   color: $color-text-muted;
   word-break: break-all;
+}
+
+/* Reference / multi-reference pickers */
+.combo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+
+  .input {
+    flex: 1;
+  }
+}
+
+.comboClear {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  background: $color-surface;
+  color: $color-text-muted;
+  cursor: pointer;
+  &:hover {
+    color: $color-danger;
+    border-color: $color-danger;
+  }
+}
+
+.comboMenu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: $space-2;
+}
+
+.comboSearch {
+  width: 100%;
+  padding: $space-2 $space-3;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  font: inherit;
+  color: $color-text;
+  background: $color-bg;
+  margin-bottom: $space-2;
+  &:focus {
+    @include focus-ring;
+  }
+}
+
+.comboList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+
+  li button {
+    width: 100%;
+    text-align: left;
+    padding: $space-2 $space-3;
+    border: none;
+    background: none;
+    font: inherit;
+    color: $color-text;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    &:hover {
+      background: $color-bg;
+    }
+  }
+}
+
+.comboActive {
+  background: $color-bg;
+  font-weight: 600;
+}
+
+.comboEmpty {
+  padding: $space-2 $space-3;
+  color: $color-text-muted;
+  font-size: 13px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-1 $space-2;
+  background: $color-bg;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  font-size: 13px;
+
+  button {
+    border: none;
+    background: none;
+    color: $color-text-muted;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    &:hover {
+      color: $color-danger;
+    }
+  }
 }

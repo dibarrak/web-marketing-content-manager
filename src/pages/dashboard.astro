@@ -4,7 +4,7 @@ import { COLLECTIONS, BENEFITS_COLLECTION } from '@lib/config/sites';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
 import { canAccessCollection, isAdmin } from '@lib/authz';
-import { Ticket, Tickets, BookX, Globe, RefreshCw } from 'lucide-react';
+import { Ticket, Tickets, BookX, Globe, RefreshCw, Newspaper } from 'lucide-react';
 
 export const prerender = false;
 
@@ -12,7 +12,6 @@ const user = Astro.locals.user;
 if (!user) return Astro.redirect(withBase('login'));
 
 const env = Astro.locals.runtime.env;
-const wf = getWebflow(env);
 
 // Editors only see the collections they've been granted; admin/super-admin see all.
 const collectionsList = Object.values(COLLECTIONS).filter((c) =>
@@ -23,12 +22,16 @@ const collectionIconMap = {
   '695bfb101cc1337da4ec00af': Ticket,
   '6961886320253700c1e5baf5': Tickets,
   '69865d518920fb1ddd9007f3': BookX,
+  '680047a242ec07b1b8f10f55': Newspaper,
 };
 
 const counts = await Promise.all(
   collectionsList.map(async (c) => {
     try {
-      const res = await wf.collections.list(c.collectionId, { limit: 1 });
+      // Use the client for the collection's workspace (blog lives in "cash").
+      const res = await getWebflow(env, c.workspace).collections.list(c.collectionId, {
+        limit: 1,
+      });
       return { key: c.key, total: res.pagination.total, error: null as string | null };
     } catch (err) {
       const msg = err instanceof WebflowApiError ? `${err.code}: ${err.message}` : String(err);

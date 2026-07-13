@@ -64,3 +64,16 @@ export async function updateItem<T = Record<string, unknown>>(
 export async function deleteItem(collectionId: string, itemId: string) {
   await api.delete(`/collections/${collectionId}/items/${itemId}`);
 }
+
+export interface ReferenceOption {
+  id: string;
+  name: string;
+}
+
+/** List `{ id, name }` options for a blog-referenced collection (for pickers). */
+export async function listReferenceItems(collectionId: string) {
+  const { data } = await api.get<{ options: ReferenceOption[] }>(
+    `/collections/${collectionId}/reference-items`,
+  );
+  return data.options;
+}

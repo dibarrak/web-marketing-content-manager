@@ -26,7 +26,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
   const offset = Number(url.searchParams.get('offset') ?? 0);
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, collection.workspace);
     const data = await wf.collections.list(collectionId, { limit, offset });
     return Response.json(data);
   } catch (err) {
@@ -53,7 +53,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   }
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, collection.workspace);
     const created = await wf.collections.create(
       collectionId,
       body.fieldData as { name: string; slug: string },

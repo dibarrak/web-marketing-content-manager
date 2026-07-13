@@ -72,6 +72,10 @@
   align-self: stretch;
   padding-bottom: 48px;
   flex-shrink: 0;
+
+  &.noPadding {
+    padding-bottom: 0;
+  }
 }
 
 // ── Coupon-specific ────────────────────────────────────────────────────────────
@@ -394,6 +398,11 @@
       height: 2px;
       background-color: $color-danger;
     }
+  }
+
+  &.large {
+    width: 200px;
+    aspect-ratio: 16 / 9;
   }
 }
 

@@ -16,10 +16,13 @@ import { CirclePlus, ArrowLeft, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Toaster } from 'sonner';
+import { blogFieldsFromWebflow, blogFieldsToWebflow } from '@lib/blog-fields';
+import BlogPostForm from '../forms/BlogPostForm';
 import CouponFilterForm from '../forms/CouponFilterForm';
 import CouponForm from '../forms/CouponForm';
 import HeroBannerForm from '../forms/HeroBannerForm';
 import QueryProvider from '../providers/QueryProvider';
+import BlogPostCard from './BlogPostCard';
 import ConfirmDialog from './ConfirmDialog';
 import CollectionFilters, { DEFAULT_FILTERS, type FilterState } from './CollectionFilters';
 import CouponCard from './CouponCard';
@@ -184,7 +187,10 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   };
 
   const handleDuplicate = (item: WebflowItem<AnyFields>) => {
-    const source = translateOptionFields(collectionKey, item.fieldData) as AnyFields;
+    let source = translateOptionFields(collectionKey, item.fieldData) as AnyFields;
+    if (collectionKey === 'blogPosts') {
+      source = blogFieldsFromWebflow(source) as AnyFields;
+    }
     setCreateDefaults({
       ...source,
       name: `${source.name} (copia)`,
@@ -225,16 +231,25 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
         closeForm();
         return;
       }
-      const payload = reverseTranslateOptionFields(collectionKey, diff) as AnyFields;
+      let payload = reverseTranslateOptionFields(collectionKey, diff) as AnyFields;
+      if (collectionKey === 'blogPosts') {
+        payload = blogFieldsToWebflow(payload) as AnyFields;
+      }
       updateMutation.mutate({ id: editing.id, fields: payload });
     } else {
-      createMutation.mutate(reverseTranslateOptionFields(collectionKey, values) as AnyFields);
+      let payload = reverseTranslateOptionFields(collectionKey, values) as AnyFields;
+      if (collectionKey === 'blogPosts') {
+        payload = blogFieldsToWebflow(payload) as AnyFields;
+      }
+      createMutation.mutate(payload);
     }
   };
 
   const submitting = createMutation.isPending || updateMutation.isPending;
   const editingDefaults = editing
-    ? (translateOptionFields(collectionKey, editing.fieldData) as unknown as AnyFields)
+    ? ((collectionKey === 'blogPosts'
+        ? blogFieldsFromWebflow(translateOptionFields(collectionKey, editing.fieldData))
+        : translateOptionFields(collectionKey, editing.fieldData)) as unknown as AnyFields)
     : undefined;
   // When duplicating, editingDefaults is undefined (no editing item), so fall back to createDefaults
   const formDefaults = (editingDefaults ?? createDefaults) as never;
@@ -255,6 +270,18 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
     if (collectionKey === 'couponFilterList') {
       return (
         <CouponFilterForm
+          defaultValues={formDefaults}
+          onSubmit={onSubmitForm as never}
+          onCancel={closeForm}
+          submitting={submitting}
+          isEditing={!!editing}
+        />
+      );
+    }
+    if (collectionKey === 'blogPosts') {
+      return (
+        <BlogPostForm
+          collectionId={collectionId}
           defaultValues={formDefaults}
           onSubmit={onSubmitForm as never}
           onCancel={closeForm}
@@ -401,6 +428,18 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                     if (collectionKey === 'couponFilterList') {
                       return (
                         <CouponFilterCard
+                          key={item.id}
+                          item={item}
+                          onEdit={setEditing}
+                          onDelete={setPendingDelete}
+                          onDuplicate={handleDuplicate}
+                          deletingId={deletingId}
+                        />
+                      );
+                    }
+                    if (collectionKey === 'blogPosts') {
+                      return (
+                        <BlogPostCard
                           key={item.id}
                           item={item}
                           onEdit={setEditing}

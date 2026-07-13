@@ -1,10 +1,12 @@
 # Webflow Marketing Content Manager
 
-Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupones, hero banners) con UI orientada a usuarios no técnicos, conversión automática a WEBP y bitácora de acciones. Se despliega en Webflow Cloud (Cloudflare Workers).
+Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupones, hero banners, blog) con UI orientada a usuarios no técnicos, conversión automática a WEBP y bitácora de acciones. Se despliega en Webflow Cloud (Cloudflare Workers).
 
 ## Funcionalidades
 
 - **Gestión de colecciones CMS**: alta, edición, duplicado y borrado de cupones, filtros de cupones y hero banners, con filtros y validación por formulario.
+- **Blog | Posts** (colección en un workspace de Webflow distinto — "Cash"): flujo *draft-first* (crear/editar como borrador, publicar aparte) con slug auto-generado y de solo lectura, tiempo de lectura auto-calculado desde el contenido, selectores con búsqueda para las 6 colecciones referenciadas (categoría, subcategoría, autor, disclaimer, breadcrumbs, featured reviews, CTA) y editor de contenido enriquecido que admite insertar imágenes por subida (convertidas a WEBP) o por URL externa.
+  - Soporta **múltiples workspaces de Webflow**: cada colección declara su `workspace` en [src/lib/config/sites.ts](src/lib/config/sites.ts) y el cliente API resuelve el token correspondiente (`WEBFLOW_TOKEN` o `WEBFLOW_TOKEN_CASH`) en [src/lib/webflow/index.ts](src/lib/webflow/index.ts).
 - **Subida de imágenes**: conversión automática a WEBP en el edge; soporta subir varias imágenes a la vez.
 - **Directorio de comercios** (solo super-admin): catálogo interno de comercios (ID de organización, nombre y logo). El registro vive en D1 y el logo se hospeda como asset de Webflow. Alimenta el selector de logos del formulario de cupón para reutilizar logotipos sin volver a subirlos.
   - En el cupón el logo se guarda como *snapshot* (`{url, alt}`): editar o borrar un comercio no altera los cupones existentes ni elimina assets de Webflow.
@@ -23,7 +25,7 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
 - Cloudflare D1 (SQLite edge) + Drizzle ORM
 - Better Auth (sesiones cookie HttpOnly)
 - `@cf-wasm/photon` (conversión WEBP en Workers)
-- TipTap (WYSIWYG para RichText)
+- TipTap (WYSIWYG para RichText; incluye `@tiptap/extension-image` para el editor de contenido del blog)
 - react-hook-form + Zod
 - TanStack Query + Axios
 - sonner (toasts)
@@ -33,7 +35,8 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
 
 - Node 20+ y PNPM 11+
 - Cuenta Cloudflare con wrangler autenticado (`pnpm wrangler login`)
-- Token de Webflow API con scopes CMS + Assets + Sites (publicación) en los dos sitios
+- Token de Webflow API con scopes CMS + Assets + Sites (publicación) en los sitios del workspace principal
+- Token de Webflow API adicional para el workspace **Cash** (colección de Blog Posts y sus 6 colecciones referenciadas)
 
 ## Setup local
 
@@ -63,6 +66,7 @@ pnpm dev
 3. Sube secretos a Workers / variables de entorno de Webflow Cloud (no van al repo):
    ```bash
    pnpm wrangler secret put WEBFLOW_TOKEN
+   pnpm wrangler secret put WEBFLOW_TOKEN_CASH  # workspace "Cash" (Blog Posts)
    pnpm wrangler secret put BETTER_AUTH_SECRET
    pnpm wrangler secret put BETTER_AUTH_URL
    pnpm wrangler secret put BENEFITS_INGEST_SECRET  # secreto compartido con el Apps Script de Benefits

@@ -23,12 +23,13 @@ function forbidden() {
 export const GET: APIRoute = async ({ params, locals }) => {
   if (!locals.user) return unauth();
   const { collectionId, itemId } = params as { collectionId: string; itemId: string };
-  if (!findCollectionById(collectionId))
+  const collection = findCollectionById(collectionId);
+  if (!collection)
     return Response.json({ error: 'Unknown collection' }, { status: 404 });
   if (!canAccessCollection(locals.user, collectionId)) return forbidden();
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, collection.workspace);
     const item = await wf.collections.get(collectionId, itemId);
     return Response.json(item);
   } catch (err) {
@@ -51,7 +52,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!body?.fieldData) return Response.json({ error: 'Missing fieldData' }, { status: 400 });
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, collection.workspace);
     const before = await wf.collections.get(collectionId, itemId).catch(() => null);
     const updated = await wf.collections.update(collectionId, itemId, body.fieldData, {
       publish: body.publish,
@@ -83,7 +84,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   if (!canAccessCollection(user, collectionId)) return forbidden();
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, collection.workspace);
     const before = await wf.collections.get(collectionId, itemId).catch(() => null);
     await wf.collections.remove(collectionId, itemId);
 

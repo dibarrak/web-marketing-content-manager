@@ -30,6 +30,7 @@
     "@cf-wasm/photon": "^0.1.30",
     "@hookform/resolvers": "^3.9.1",
     "@tanstack/react-query": "^5.62.7",
+    "@tiptap/extension-image": "^2.27.2",
     "@tiptap/extension-link": "^2.10.4",
     "@tiptap/pm": "^2.10.4",
     "@tiptap/react": "^2.10.4",
@@ -53,6 +54,7 @@
     "kysely": "^0.29.2"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.9",
     "@cloudflare/workers-types": "^4.20241218.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",

@@ -12,7 +12,7 @@
 import type { APIRoute } from 'astro';
 import { getWebflow } from '@lib/webflow';
 import { toWebp, replaceExtensionWithWebp } from '@lib/images/webp';
-import { findCollectionById, isKnownSiteId } from '@lib/config/sites';
+import { findCollectionById, isKnownSiteId, workspaceForSite } from '@lib/config/sites';
 
 export const prerender = false;
 
@@ -58,7 +58,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const buf = await file.arrayBuffer();
     const webp = await toWebp(buf, { maxDimension });
     const fileName = replaceExtensionWithWebp(file.name || 'upload.bin');
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, workspaceForSite(siteId));
     const uploaded = await wf.assets.upload(siteId, fileName, webp.bytes, 'image/webp');
     return Response.json({
       id: uploaded.id,

@@ -130,8 +130,51 @@ export const heroBannerSchema = z.object({
 });
 export type HeroBannerFields = z.infer<typeof heroBannerSchema>;
 
+// Flow 4 — Blog | Posts (Cash workspace). References are stored as Webflow item
+// ids: single Reference → string, MultiReference → string[]. Reading time is
+// auto-derived from the content, and the slug is auto-generated + read-only.
+export const blogPostSchema = z.object({
+  name: nameField,
+  slug: slugField,
+  // Required text/SEO:
+  'post-h1': z.string().min(1, 'Requerido'),
+  // Optional in the UI: auto-filled from post-h1 on submit when left blank, so
+  // the (Webflow-required) field always receives a value.
+  'post-title-tag': z.string().nullish(),
+  'post-meta-description': z.string().min(1, 'Requerido'),
+  'post-content': richTextRequired,
+  // Required reference:
+  'post-category': z.string().min(1, 'Requerido'),
+  // Optional text:
+  'post-short-description': z.string().nullish(),
+  'post-last-breadcrumb': z.string().nullish(),
+  'post-image': z.string().nullish(), // hosted URL
+  'post-image-alt-tex': z.string().nullish(),
+  'post-audio-link': z.string().nullish(),
+  // Optional references (single):
+  'post-subcategory': z.string().nullish(),
+  'post-author-reviewer': z.string().nullish(),
+  // Optional references (multi):
+  'post-disclaimer': z.array(z.string()).default([]),
+  'post-breadcrumbs': z.array(z.string()).default([]),
+  'post-featured-reviews': z.array(z.string()).default([]),
+  'post-cta': z.array(z.string()).default([]),
+  // Switches:
+  'post-featured': z.boolean().nullish(),
+  'post-featured-category': z.boolean().nullish(),
+  'post-highlighted-blog-index-2': z.boolean().nullish(),
+  // Numbers:
+  'post-reading-time': z.number().int().min(0).nullish(), // auto-calculated
+  'post-carousel-highlighted-blog-index': z.number().int().min(0).nullish(),
+  // Date + visibility option:
+  'post-published-on': z.string().nullish(),
+  'post-date-visbility': z.string().nullish(), // option id
+});
+export type BlogPostFields = z.infer<typeof blogPostSchema>;
+
 export const schemas = {
   coupons: couponSchema,
   couponFilterList: couponFilterSchema,
   heroBanners: heroBannerSchema,
+  blogPosts: blogPostSchema,
 } as const;
