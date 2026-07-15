@@ -54,9 +54,19 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   try {
     const wf = getWebflow(locals.runtime.env, collection.workspace);
     const before = await wf.collections.get(collectionId, itemId).catch(() => null);
-    const updated = await wf.collections.update(collectionId, itemId, body.fieldData, {
-      publish: body.publish,
+
+    // Webflow rejects a "live" PATCH on an item that has never been published
+    // (there's no live version yet to update) — this happens for items created
+    // directly in Webflow and left as a draft. Detect that case and fall back
+    // to a plain PATCH followed by an explicit first-time publish.
+    const neverPublished = !before?.lastPublished;
+    let updated = await wf.collections.update(collectionId, itemId, body.fieldData, {
+      publish: body.publish && !neverPublished,
     });
+    if (body.publish && neverPublished) {
+      await wf.collections.publish(collectionId, [itemId]);
+      updated = await wf.collections.get(collectionId, itemId);
+    }
 
     await logAudit(locals.runtime.env, {
       userId: user.id,

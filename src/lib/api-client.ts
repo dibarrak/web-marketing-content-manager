@@ -77,3 +77,14 @@ export async function listReferenceItems(collectionId: string) {
   );
   return data.options;
 }
+
+export interface SitePublishStatus {
+  stagingPublishedAt: string | null;
+  productionPublishedAt: string | null;
+}
+
+/** Last time this site was actually published (staging/production), per our audit log. */
+export async function getSitePublishStatus(siteId: string) {
+  const { data } = await api.get<SitePublishStatus>(`/sites/${siteId}/publish-status`);
+  return data;
+}

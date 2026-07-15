@@ -22,6 +22,9 @@ interface UploadResponse {
   error?: string;
 }
 
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const;
+type HeadingLevel = (typeof HEADING_LEVELS)[number];
+
 /**
  * Full rich-text editor for blog post content. Beyond text formatting it can
  * embed images two ways, both of which avoid inlining base64 (Webflow rejects
@@ -42,6 +45,8 @@ export default function BlogContentField({
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [htmlMode, setHtmlMode] = useState(false);
+  const [htmlDraft, setHtmlDraft] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -76,6 +81,27 @@ export default function BlogContentField({
     editor.chain().focus().setImage({ src: url }).run();
   };
 
+  const setHeadingLevel = (v: string) => {
+    if (!editor) return;
+    if (v === 'p') editor.chain().focus().setParagraph().run();
+    else editor.chain().focus().setHeading({ level: Number(v) as HeadingLevel }).run();
+  };
+
+  const enterHtmlMode = () => {
+    if (!editor) return;
+    setHtmlDraft(editor.getHTML());
+    setHtmlMode(true);
+  };
+
+  const applyHtmlAndExit = () => {
+    if (!editor) return;
+    // emitUpdate=true so onUpdate fires and propagates the new HTML via onChange.
+    editor.commands.setContent(htmlDraft || '', true);
+    setHtmlMode(false);
+  };
+
+  const cancelHtmlMode = () => setHtmlMode(false);
+
   async function uploadImage(file: File) {
     if (!editor) return;
     setLocalError(null);
@@ -107,83 +133,117 @@ export default function BlogContentField({
       {editor && (
         <div className={styles.rich}>
           <div className={styles.richToolbar}>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              aria-pressed={editor.isActive('bold')}
-              title="Negrita"
-            >
-              <strong>B</strong>
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              aria-pressed={editor.isActive('italic')}
-              title="Cursiva"
-            >
-              <em>I</em>
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-              aria-pressed={editor.isActive('heading', { level: 2 })}
-              title="Encabezado 2"
-            >
-              H2
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-              aria-pressed={editor.isActive('heading', { level: 3 })}
-              title="Encabezado 3"
-            >
-              H3
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              aria-pressed={editor.isActive('bulletList')}
-            >
-              • lista
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              aria-pressed={editor.isActive('orderedList')}
-            >
-              1. lista
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              aria-pressed={editor.isActive('blockquote')}
-              title="Cita"
-            >
-              ❝
-            </button>
-            <button type="button" onClick={toggleLink} aria-pressed={editor.isActive('link')}>
-              link
-            </button>
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              title="Subir imagen (se convierte a WEBP)"
-            >
-              {uploading ? 'subiendo…' : '⬆ imagen'}
-            </button>
-            <button type="button" onClick={insertImageByUrl} title="Insertar imagen por URL">
-              🔗 imagen URL
-            </button>
-            <button
-              type="button"
-              onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
-              title="Limpiar formato"
-            >
-              limpiar
-            </button>
+            {htmlMode ? (
+              <>
+                <button
+                  type="button"
+                  onClick={applyHtmlAndExit}
+                  title="Aplicar este HTML y volver al editor visual"
+                >
+                  🎨 Aplicar y volver a diseño
+                </button>
+                <button type="button" onClick={cancelHtmlMode} title="Descartar los cambios de HTML">
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <select
+                  className={styles.headingSelect}
+                  value={
+                    HEADING_LEVELS.find((l) => editor.isActive('heading', { level: l }))?.toString() ??
+                    'p'
+                  }
+                  onChange={(e) => setHeadingLevel(e.target.value)}
+                  title="Estilo de texto (Párrafo o encabezado H1–H6)"
+                >
+                  <option value="p">Párrafo</option>
+                  {HEADING_LEVELS.map((l) => (
+                    <option key={l} value={l}>
+                      H{l}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleBold().run()}
+                  aria-pressed={editor.isActive('bold')}
+                  title="Negrita (strong)"
+                >
+                  <strong>B</strong>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleItalic().run()}
+                  aria-pressed={editor.isActive('italic')}
+                  title="Cursiva / itálica (em)"
+                >
+                  <em>I</em>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleBulletList().run()}
+                  aria-pressed={editor.isActive('bulletList')}
+                >
+                  • lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                  aria-pressed={editor.isActive('orderedList')}
+                >
+                  1. lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                  aria-pressed={editor.isActive('blockquote')}
+                  title="Cita"
+                >
+                  ❝
+                </button>
+                <button type="button" onClick={toggleLink} aria-pressed={editor.isActive('link')}>
+                  link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  title="Subir imagen (se convierte a WEBP)"
+                >
+                  {uploading ? 'subiendo…' : '⬆ imagen'}
+                </button>
+                <button type="button" onClick={insertImageByUrl} title="Insertar imagen por URL">
+                  🔗 imagen URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+                  title="Limpiar formato"
+                >
+                  limpiar
+                </button>
+                <button
+                  type="button"
+                  onClick={enterHtmlMode}
+                  title="Editar el HTML directamente y luego volver al diseño"
+                >
+                  {'</>'} HTML
+                </button>
+              </>
+            )}
           </div>
-          <EditorContent editor={editor} className={styles.richContent} />
+          {htmlMode ? (
+            <textarea
+              className={styles.htmlSource}
+              value={htmlDraft}
+              onChange={(e) => setHtmlDraft(e.target.value)}
+              spellCheck={false}
+              placeholder="Pega aquí el HTML ya tratado…"
+            />
+          ) : (
+            <EditorContent editor={editor} className={styles.richContent} />
+          )}
           <input
             ref={fileRef}
             type="file"
@@ -196,6 +256,10 @@ export default function BlogContentField({
           />
         </div>
       )}
+      <small className={styles.help}>
+        Evita usar H1 dentro del contenido: el H1 real de la página ya es el campo "H1" de arriba.
+        {' '}El modo HTML no valida ni sanitiza el código; pega solo HTML de confianza.
+      </small>
       {help && !error && !localError && <small className={styles.help}>{help}</small>}
       {(error || localError) && <small className={styles.error}>{error ?? localError}</small>}
     </div>

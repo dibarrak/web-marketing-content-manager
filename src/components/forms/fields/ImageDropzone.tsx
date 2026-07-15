@@ -1,5 +1,6 @@
 import { useRef, useState, type DragEvent, type ChangeEvent } from 'react';
 import { withBase } from '@lib/base-path';
+import { Check, Copy } from 'lucide-react';
 import styles from './fields.module.scss';
 
 export interface UploadedImage {
@@ -45,6 +46,7 @@ export default function ImageDropzone({
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   // Always holds the latest committed value. Kept in sync on every render so it
   // survives re-renders and overlapping handleFiles() calls — appending against
@@ -100,6 +102,17 @@ export default function ImageDropzone({
   }
 
   const remove = (i: number) => onChange(value.filter((_, idx) => idx !== i));
+
+  async function copyUrl(url: string, i: number) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedIndex(i);
+      setTimeout(() => setCopiedIndex((cur) => (cur === i ? null : cur)), 1500);
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) — the URL text is
+      // still visible below and selectable/copyable by hand.
+    }
+  }
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -162,6 +175,27 @@ export default function ImageDropzone({
             </div>
           ))}
         </div>
+      )}
+
+      {value.length > 0 && (
+        <ul className={styles.urlList}>
+          {value.map((img, i) => (
+            <li key={`${img.url}-url-${i}`} className={styles.urlItem}>
+              <span className={styles.urlText} title={img.url}>
+                {img.url}
+              </span>
+              <button
+                type="button"
+                className={styles.urlCopyBtn}
+                onClick={() => copyUrl(img.url, i)}
+                title="Copiar URL (para usarla en el cuerpo del post)"
+                aria-label="Copiar URL"
+              >
+                {copiedIndex === i ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {help && !error && !localError && <small className={styles.help}>{help}</small>}

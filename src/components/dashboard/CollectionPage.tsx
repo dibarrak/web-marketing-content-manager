@@ -1,6 +1,7 @@
 import {
   createItem,
   deleteItem,
+  getSitePublishStatus,
   listItems,
   updateItem,
   type WebflowItem,
@@ -98,6 +99,16 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
   const itemsQuery = useQuery({
     queryKey: ['collection', collectionId],
     queryFn: () => listItems<AnyFields>(collectionId),
+  });
+
+  // Blog Posts is the only card that distinguishes "live in the Webflow CMS"
+  // from "the site has actually been republished since". Other collections'
+  // status badges are about date-range visibility, not this.
+  const sitePublishQuery = useQuery({
+    queryKey: ['site-publish-status', siteId],
+    queryFn: () => getSitePublishStatus(siteId),
+    enabled: collectionKey === 'blogPosts',
+    staleTime: 15_000,
   });
 
   const createMutation = useMutation({
@@ -314,7 +325,12 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
         </button>
       </header>
 
-      {canPublish && <PublishControls siteId={siteId} />}
+      {canPublish && (
+        <PublishControls
+          siteId={siteId}
+          onPublished={() => void qc.invalidateQueries({ queryKey: ['site-publish-status', siteId] })}
+        />
+      )}
 
       {errorMessage && (
         <div className={styles.errorBanner}>
@@ -446,6 +462,7 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                           onDelete={setPendingDelete}
                           onDuplicate={handleDuplicate}
                           deletingId={deletingId}
+                          sitePublishStatus={sitePublishQuery.data}
                         />
                       );
                     }

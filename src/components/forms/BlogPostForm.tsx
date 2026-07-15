@@ -27,6 +27,17 @@ interface Props {
 const refCollection = (fieldSlug: string): string =>
   BLOG_REFERENCES.find((r) => r.fieldSlug === fieldSlug)!.collectionId;
 
+/**
+ * Current moment formatted for a `datetime-local` input (local time, not
+ * UTC — `toISOString()` would shift the value by the browser's UTC offset
+ * once blogFieldsToWebflow re-parses it as local time).
+ */
+function nowForDatetimeLocal(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 const EMPTY: BlogPostFields = {
   name: '',
   slug: '',
@@ -95,6 +106,10 @@ export default function BlogPostForm({
       'post-title-tag': data['post-title-tag']?.trim() || data['post-h1'],
       // Reading time is always derived from the content.
       'post-reading-time': readingTimeMinutes(data['post-content']),
+      // The site's only "Date Visibility" option is "Only Published On", so an
+      // empty published-on date leaves posts without a visible/renderable
+      // date. Default to now if left blank; never overwrite an existing value.
+      'post-published-on': data['post-published-on']?.trim() || nowForDatetimeLocal(),
     };
     return onSubmit(payload);
   };
@@ -311,7 +326,7 @@ export default function BlogPostForm({
             type="datetime-local"
             {...register('post-published-on')}
             error={errors['post-published-on']?.message}
-            help="Fecha mostrada en el post."
+            help="Fecha mostrada en el post. Si la dejas vacía, se completa sola con la fecha/hora actual al guardar — cambiala aquí para adelantarla o atrasarla."
           />
           <TextField
             label="Orden en carrusel de destacados"

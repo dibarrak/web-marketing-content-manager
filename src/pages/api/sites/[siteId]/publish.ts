@@ -9,7 +9,7 @@
 import type { APIRoute } from 'astro';
 import { getWebflow } from '@lib/webflow';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
-import { isKnownSiteId } from '@lib/config/sites';
+import { isKnownSiteId, workspaceForSite } from '@lib/config/sites';
 import { isAdmin } from '@lib/authz';
 import { logAudit } from '@lib/audit';
 
@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   }
 
   try {
-    const wf = getWebflow(locals.runtime.env);
+    const wf = getWebflow(locals.runtime.env, workspaceForSite(siteId));
 
     let publishedDomains: string[] = [];
     if (target === 'production') {

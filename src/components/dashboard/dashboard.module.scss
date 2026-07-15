@@ -140,6 +140,10 @@
 .modalCard {
   width: 100%;
   max-width: 800px;
+  // Grid items default to min-width: auto (sized to their widest un-shrinkable
+  // content), which overrides max-width. Without this, a long unbroken string
+  // anywhere inside (e.g. a raw asset URL) grows the whole card past 800px.
+  min-width: 0;
   background: $color-surface;
   border-radius: $radius-lg;
   padding: $space-6 $space-6 0 $space-6;

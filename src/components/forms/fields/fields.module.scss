@@ -107,6 +107,59 @@
   place-items: center;
 }
 
+.urlList {
+  list-style: none;
+  margin: $space-2 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  // Nested column-flex containers (.form > .fieldset > .field > .urlList) each
+  // default to min-width: auto, sized to their widest un-shrinkable content.
+  // Without min-width: 0 here, a long unbroken URL bubbles that width up
+  // through every ancestor instead of being clipped by .urlText's ellipsis.
+  min-width: 0;
+}
+
+.urlItem {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-2;
+  min-width: 0;
+  padding: $space-1 $space-2;
+  background: $color-bg;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+}
+
+.urlText {
+  flex: 1;
+  min-width: 0;
+  font-family: $font-mono;
+  font-size: 12px;
+  color: $color-text-muted;
+  // Wrap instead of single-line ellipsis: a URL is one unbroken token, and
+  // `white-space: nowrap` gives it a min-content width equal to its full
+  // length — that alone can blow past any ancestor missing `min-width: 0`.
+  // Wrapping keeps the token's contribution to a single character.
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.urlCopyBtn {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: $color-text-muted;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  &:hover {
+    color: $color-primary;
+  }
+}
+
 .uploading {
   position: absolute;
   inset: 0;
@@ -242,6 +295,32 @@
       border-color: $color-primary;
       color: $color-primary;
     }
+  }
+}
+
+.headingSelect {
+  padding: $space-1 $space-2;
+  border-radius: $radius-sm;
+  border: 1px solid $color-border;
+  background: $color-surface;
+  font-size: 13px;
+  color: $color-text;
+  cursor: pointer;
+}
+
+.htmlSource {
+  width: 100%;
+  min-height: 200px;
+  padding: $space-3;
+  border: none;
+  font-family: $font-mono;
+  font-size: 13px;
+  line-height: 1.5;
+  color: $color-text;
+  background: $color-bg;
+  resize: vertical;
+  &:focus {
+    @include focus-ring;
   }
 }
 

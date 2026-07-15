@@ -233,6 +233,26 @@
   }
 }
 
+// Distinguishes "live in the Webflow CMS" (.sideStatus above) from "the site
+// has actually been republished since this item's last change" — the two are
+// not the same thing in Webflow.
+.siteLiveNote {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+
+  &.live {
+    color: $color-success;
+  }
+  &.pending {
+    color: $color-warning;
+  }
+  &.loading {
+    color: $color-text-muted;
+  }
+}
+
 // ── Banner-specific ────────────────────────────────────────────────────────────
 
 // Wider right column for banners (overrides .metaBlock max-width + padding)

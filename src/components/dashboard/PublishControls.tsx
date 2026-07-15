@@ -16,6 +16,8 @@ interface PublishResponse {
 
 interface Props {
   siteId: string;
+  /** Called after a publish request succeeds (staging or production). */
+  onPublished?: () => void;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
  * custom domains. All collections sharing a siteId publish the same site, so a
  * publish here also ships any other staged changes on that site.
  */
-export default function PublishControls({ siteId }: Props) {
+export default function PublishControls({ siteId, onPublished }: Props) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<Target | null>(null);
   const [confirmProd, setConfirmProd] = useState(false);
@@ -61,6 +63,7 @@ export default function PublishControls({ siteId }: Props) {
         id: toastId,
         description: res.data.domains.join(', '),
       });
+      onPublished?.();
     } catch (err) {
       let text = 'No se pudo publicar.';
       if (err instanceof AxiosError) {
