@@ -3,6 +3,7 @@ import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import { EDITOR_ASSIGNABLE_SECTIONS, ROLE_LABELS, type Role } from '@lib/authz';
 import { COLLECTIONS } from '@lib/config/sites';
+import { CSV_COLLECTIONS } from '@lib/config/csvCollections';
 import ConfirmDialog from '../dashboard/ConfirmDialog';
 import styles from './UsersAdmin.module.scss';
 
@@ -16,9 +17,10 @@ interface AdminUser {
   createdAt: string;
 }
 
-const SECTION_LABELS: Record<string, string> = Object.fromEntries(
-  Object.values(COLLECTIONS).map((c) => [c.key, c.displayName]),
-);
+const SECTION_LABELS: Record<string, string> = Object.fromEntries([
+  ...Object.values(COLLECTIONS).map((c) => [c.key, c.displayName]),
+  ...Object.values(CSV_COLLECTIONS).map((c) => [c.key, c.displayName]),
+]);
 
 const api = (path: string) => withBase(`api/admin/${path}`);
 

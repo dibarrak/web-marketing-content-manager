@@ -13,9 +13,8 @@ import { reverseTranslateOptionFields, translateOptionFields } from '@lib/webflo
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import gsap from 'gsap';
-import { CirclePlus, ArrowLeft, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { CirclePlus, ArrowLeft } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster } from 'sonner';
 import { blogFieldsFromWebflow, blogFieldsToWebflow } from '@lib/blog-fields';
 import BlogPostForm from '../forms/BlogPostForm';
@@ -28,6 +27,7 @@ import ConfirmDialog from './ConfirmDialog';
 import CollectionFilters, { DEFAULT_FILTERS, type FilterState } from './CollectionFilters';
 import CouponCard from './CouponCard';
 import CouponFilterCard from './CouponFilterCard';
+import FormModal from './FormModal';
 import HeroBannerCard from './HeroBannerCard';
 import PublishControls from './PublishControls';
 import styles from './dashboard.module.scss';
@@ -42,51 +42,6 @@ interface Props {
 }
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
-
-function FormModal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const backdropRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  useEffect(() => {
-    const backdrop = backdropRef.current;
-    const card = cardRef.current;
-    if (!backdrop || !card) return;
-    gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
-    gsap.fromTo(card, { scale: 0.92, opacity: 0, y: 16 }, { scale: 1, opacity: 1, y: 0, duration: 0.3, ease: 'back.out(1.5)' });
-  }, []);
-
-  const handleClose = () => {
-    const backdrop = backdropRef.current;
-    const card = cardRef.current;
-    if (!backdrop || !card) { onClose(); return; }
-    gsap.to(card, { scale: 0.92, opacity: 0, y: 16, duration: 0.2, ease: 'power2.in' });
-    gsap.to(backdrop, { opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: onClose });
-  };
-
-  return createPortal(
-    <div
-      ref={backdropRef}
-      className={styles.modal}
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
-    >
-      <div ref={cardRef} className={styles.modalCard}>
-        <div className={styles.modalHeader}>
-          <h2>{title}</h2>
-          <button type="button" className={styles.modalCloseBtn} onClick={handleClose} aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>,
-    document.body
-  );
-}
 
 function CollectionPageInner({ collectionKey, collectionId, displayName, singularName, siteId, canPublish }: Props) {
   const qc = useQueryClient();

@@ -10,6 +10,7 @@
  * reserved for admin/super-admin and is NOT assignable to editors.
  */
 import { COLLECTIONS, findCollectionById, type CollectionKey } from '@lib/config/sites';
+import { CSV_COLLECTIONS, type CsvCollectionKey } from '@lib/config/csvCollections';
 
 export type Role = 'super-admin' | 'admin' | 'editor';
 
@@ -23,8 +24,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   editor: 'Editor',
 };
 
-/** A grantable section: a collection key, or the audit log. */
-export type Section = CollectionKey | 'auditLog';
+/** A grantable section: a collection key, a CSV module key, or the audit log. */
+export type Section = CollectionKey | CsvCollectionKey | 'auditLog';
 
 /** Minimal user shape needed for authorization checks. */
 export interface AuthUser {
@@ -34,12 +35,16 @@ export interface AuthUser {
 }
 
 const COLLECTION_KEYS = Object.keys(COLLECTIONS) as CollectionKey[];
+const CSV_COLLECTION_KEYS = Object.keys(CSV_COLLECTIONS) as CsvCollectionKey[];
 
 /** Every section in the app. */
-export const ALL_SECTIONS: Section[] = [...COLLECTION_KEYS, 'auditLog'];
+export const ALL_SECTIONS: Section[] = [...COLLECTION_KEYS, ...CSV_COLLECTION_KEYS, 'auditLog'];
 
 /** Sections a super-admin may grant to an editor (audit log excluded). */
-export const EDITOR_ASSIGNABLE_SECTIONS: CollectionKey[] = [...COLLECTION_KEYS];
+export const EDITOR_ASSIGNABLE_SECTIONS: (CollectionKey | CsvCollectionKey)[] = [
+  ...COLLECTION_KEYS,
+  ...CSV_COLLECTION_KEYS,
+];
 
 export function isSuperAdmin(user?: AuthUser | null): boolean {
   return user?.role === 'super-admin';

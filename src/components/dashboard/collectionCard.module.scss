@@ -60,6 +60,7 @@
 // Left column — primary data, separated by a dashed border
 .textBlock {
   width: 100%;
+  min-width: 0;
   padding-right: $space-6;
   border-right: 1px dashed $color-border;
 }

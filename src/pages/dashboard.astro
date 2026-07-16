@@ -1,10 +1,11 @@
 ---
 import AppLayout from '@layouts/AppLayout.astro';
 import { COLLECTIONS, BENEFITS_COLLECTION } from '@lib/config/sites';
+import { CSV_COLLECTIONS } from '@lib/config/csvCollections';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
-import { canAccessCollection, isAdmin } from '@lib/authz';
-import { Ticket, Tickets, BookX, Globe, RefreshCw, Newspaper } from 'lucide-react';
+import { canAccessCollection, canAccessSection, isAdmin } from '@lib/authz';
+import { Ticket, Tickets, BookX, Globe, RefreshCw, Newspaper, FileSpreadsheet } from 'lucide-react';
 
 export const prerender = false;
 
@@ -16,6 +17,10 @@ const env = Astro.locals.runtime.env;
 // Editors only see the collections they've been granted; admin/super-admin see all.
 const collectionsList = Object.values(COLLECTIONS).filter((c) =>
   canAccessCollection(user, c.collectionId),
+);
+
+const csvCollectionsList = Object.values(CSV_COLLECTIONS).filter((c) =>
+  canAccessSection(user, c.key),
 );
 
 const collectionIconMap = {
@@ -43,7 +48,7 @@ const counts = await Promise.all(
 
 <AppLayout title="Dashboard — Webflow Content Manager">
   <main class="dashboard">
-      {collectionsList.length === 0 && (
+      {collectionsList.length === 0 && csvCollectionsList.length === 0 && (
         <p class="no-access">
           Aún no tienes secciones asignadas. Contacta a un administrador
           (david.ibarra@kueski.com) para que te otorgue acceso.
@@ -69,6 +74,23 @@ const counts = await Promise.all(
           })
         }
       </section>
+
+      {csvCollectionsList.length > 0 && (
+        <section class="admin-tools">
+          <h2 class="section-title">Archivos CSV</h2>
+          <div class="grid">
+            {
+              csvCollectionsList.map((c) => (
+                <a class="card" href={withBase(`csv-collections/${c.key}`)}>
+                  <FileSpreadsheet size={32} />
+                  <h2>{c.displayName}</h2>
+                  <p class="muted">Sube un CSV, edítalo y descarga el archivo actualizado</p>
+                </a>
+              ))
+            }
+          </div>
+        </section>
+      )}
 
       {isAdmin(user) && (
         <section class="admin-tools">

@@ -1,0 +1,26 @@
+---
+import AppLayout from '@layouts/AppLayout.astro';
+import CsvCollectionRouter from '@components/dashboard/CsvCollectionRouter';
+import { findCsvCollectionByKey } from '@lib/config/csvCollections';
+import { withBase } from '@lib/base-path';
+import { canAccessSection } from '@lib/authz';
+
+export const prerender = false;
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(withBase('login'));
+
+const { key } = Astro.params;
+const collection = key ? findCsvCollectionByKey(key) : undefined;
+if (!collection) return Astro.redirect(withBase('dashboard'));
+if (!canAccessSection(user, collection.key)) return Astro.redirect(withBase('dashboard'));
+---
+
+<AppLayout title={`${collection.displayName} — Webflow Content Manager`}>
+  <CsvCollectionRouter
+    client:only="react"
+    csvKey={collection.key}
+    displayName={collection.displayName}
+    singularName={collection.singularName}
+  />
+</AppLayout>

@@ -29,6 +29,21 @@
   }
 }
 
+.secondary {
+  @include button-base;
+  background: transparent;
+  border: 1px solid $color-border;
+  color: $color-text;
+  &:hover:not(:disabled) {
+    background: $color-bg;
+  }
+}
+
+.toolbarActions {
+  display: flex;
+  gap: $space-3;
+}
+
 .back {
   color: $color-text-muted;
   text-decoration: none;

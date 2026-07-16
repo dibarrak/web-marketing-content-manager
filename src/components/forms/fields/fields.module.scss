@@ -184,6 +184,30 @@
   font-size: 14px;
 }
 
+.checkboxGroup {
+  display: flex;
+  gap: $space-4;
+  flex-wrap: wrap;
+}
+
+.checkboxItem {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 14px;
+}
+
+.urlPreviewImg {
+  max-width: 240px;
+  max-height: 160px;
+  object-fit: contain;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: $color-bg;
+}
+
 .headerWidthRow {
   display: flex;
   gap: $space-4;

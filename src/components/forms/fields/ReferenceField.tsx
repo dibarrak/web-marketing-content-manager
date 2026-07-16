@@ -1,7 +1,8 @@
 import { listReferenceItems, type ReferenceOption } from '@lib/api-client';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import styles from './fields.module.scss';
+import { useOutsideClose } from './useOutsideClose';
 
 interface BaseProps {
   label: string;
@@ -18,17 +19,6 @@ function useReferenceOptions(refCollectionId: string) {
     queryFn: () => listReferenceItems(refCollectionId),
     staleTime: 5 * 60 * 1000, // options change rarely; cache for the session
   });
-}
-
-/** Close the dropdown when clicking outside `ref`. */
-function useOutsideClose(ref: React.RefObject<HTMLElement | null>, onClose: () => void) {
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [ref, onClose]);
 }
 
 /* ------------------------------- single ------------------------------- */
