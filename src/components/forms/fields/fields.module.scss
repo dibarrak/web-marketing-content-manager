@@ -1,5 +1,5 @@
-@use 'tokens' as *;
-@use 'mixins' as *;
+@use "tokens" as *;
+@use "mixins" as *;
 
 .field {
   display: flex;
@@ -29,7 +29,7 @@
   &:focus {
     @include focus-ring;
   }
-  &[aria-invalid='true'] {
+  &[aria-invalid="true"] {
     border-color: $color-danger;
   }
 }
@@ -55,7 +55,9 @@
   padding: $space-5;
   text-align: center;
   cursor: pointer;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
   background: $color-surface;
   &:hover,
   &.dragging {
@@ -65,6 +67,9 @@
   &.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+  &.marginBottom {
+    margin-bottom: $space-3;
   }
 }
 
@@ -239,7 +244,7 @@
   gap: $space-3;
   cursor: pointer;
 
-  input[type='checkbox'] {
+  input[type="checkbox"] {
     width: 18px;
     height: 18px;
     accent-color: $color-primary;
@@ -314,7 +319,7 @@
     &:hover {
       background: $color-surface;
     }
-    &[aria-pressed='true'] {
+    &[aria-pressed="true"] {
       background: $color-primary-soft;
       border-color: $color-primary;
       color: $color-primary;

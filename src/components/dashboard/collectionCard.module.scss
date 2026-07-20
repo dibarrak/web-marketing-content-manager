@@ -425,6 +425,14 @@
     width: 200px;
     aspect-ratio: 16 / 9;
   }
+
+  &.adBanner {
+    width: 100%;
+    max-width: 340px;
+    aspect-ratio: 16 / 9;
+    margin-bottom: $space-2;
+    padding: 1rem;
+  }
 }
 
 // Truncated URL row with external-link icon

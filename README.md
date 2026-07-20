@@ -1,6 +1,6 @@
 # Webflow Marketing Content Manager
 
-Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupones, hero banners, blog) con UI orientada a usuarios no técnicos, conversión automática a WEBP y bitácora de acciones. Se despliega en Webflow Cloud (Cloudflare Workers).
+Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupones, hero banners, blog) y archivos CSV de banners (Ad Banners, Offerwall, Hero Banners) con UI orientada a usuarios no técnicos, conversión automática a WEBP y bitácora de acciones. Se despliega en Webflow Cloud (Cloudflare Workers).
 
 ## Funcionalidades
 
@@ -18,6 +18,13 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
   - Se usa **PATCH parcial**: el sync solo administra los bloques de cupón y cashback (y sus switches); nunca toca la promoción especial ni la referencia a landing. Los merchants ausentes del mes se apagan (soft-off). Aplica en *staging* y se publica con el control de publicación.
 - **Bitácora de acciones**: journal append-only de todo el CRUD y las publicaciones (crear/editar/borrar/publish) con filtros por usuario, acción, colección y fecha.
 - **UX de confirmaciones y avisos**: las acciones destructivas usan un diálogo de confirmación modal (`ConfirmDialog`); los resultados y estados se notifican con toasts (`sonner`).
+- **Módulos CSV** ([src/components/dashboard/CsvCollectionPage.tsx](src/components/dashboard/CsvCollectionPage.tsx)): para contenido que vive en archivos CSV en S3 (sin acceso de escritura directo), un motor genérico reutilizable ofrece el flujo **subir → editar → descargar**: se sube el CSV, se valida su estructura (columnas exactas) y cada fila (Zod) antes de habilitar la edición, se edita con la misma UI de tarjetas/formulario que el resto de colecciones (todo en el cliente, sin llamadas al backend) y se descarga el archivo regenerado para volver a subirlo a S3 a mano. Incluye 3 colecciones:
+  - **Ad Banners** (`ads.csv`) — banners de anuncios con vigencia y segmento de usuario (hora de Ciudad de México).
+  - **Offerwall** / *Pestaña Explorar* (`hero_banners.csv`) — banners del offerwall con múltiples merchants.
+  - **Hero Banners** / *Pestaña inicio* (`hero_banners.csv`) — banners de inicio con descuento/cashback, cupón y fechas de vigencia en formato de fecha simple (sin hora).
+  - El nombre del archivo de descarga es **fijo por colección** (no depende del nombre del archivo subido), configurado en [src/lib/config/csvCollections.ts](src/lib/config/csvCollections.ts) — Offerwall y Hero Banners comparten intencionalmente el mismo nombre (`hero_banners.csv`) porque así lo espera la lógica de S3 consumidora.
+  - Filtros de vista (vigencia y segmento) sobre la lista, sin afectar el CSV exportado — siempre se descargan todos los items.
+  - Los campos de fecha/hora de Ad Banners y Offerwall se interpretan y convierten siempre en hora de **Ciudad de México** ([src/lib/datetime.ts](src/lib/datetime.ts)), sin importar la zona horaria del navegador de quien edita.
 
 ## Stack
 
@@ -28,6 +35,7 @@ Webapp para administrar las colecciones CMS de Webflow (cupones, filtros de cupo
 - TipTap (WYSIWYG para RichText; incluye `@tiptap/extension-image` para el editor de contenido del blog)
 - react-hook-form + Zod
 - TanStack Query + Axios
+- papaparse (parseo/generación de CSV en el cliente)
 - sonner (toasts)
 - SCSS + PNPM + TypeScript estricto
 

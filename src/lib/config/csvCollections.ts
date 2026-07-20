@@ -6,12 +6,19 @@
  * upload back to S3 by hand. See CsvCollectionPage for the shared engine.
  */
 
-export type CsvCollectionKey = 'adBanners';
+export type CsvCollectionKey = 'adBanners' | 'offerwallBanners' | 'homeHeroBanners';
 
 export interface CsvCollectionConfig {
   key: CsvCollectionKey;
   displayName: string;
   singularName: string;
+  /**
+   * Filename always used on download, regardless of what the uploaded file
+   * was named — the consuming S3/app logic expects this exact name.
+   * Offerwall and Home Hero Banners intentionally share the same filename
+   * (confirmed with stakeholder: both feed the same downstream path).
+   */
+  downloadFileName: string;
 }
 
 export const CSV_COLLECTIONS: Record<CsvCollectionKey, CsvCollectionConfig> = {
@@ -19,6 +26,19 @@ export const CSV_COLLECTIONS: Record<CsvCollectionKey, CsvCollectionConfig> = {
     key: 'adBanners',
     displayName: 'Ad Banners',
     singularName: 'Ad Banner',
+    downloadFileName: 'ads.csv',
+  },
+  offerwallBanners: {
+    key: 'offerwallBanners',
+    displayName: 'Offerwall (Pestaña Explorar)',
+    singularName: 'Offerwall Banner',
+    downloadFileName: 'hero_banners.csv',
+  },
+  homeHeroBanners: {
+    key: 'homeHeroBanners',
+    displayName: 'Hero Banners (Pestaña inicio)',
+    singularName: 'Hero Banner (Inicio)',
+    downloadFileName: 'hero_banners.csv',
   },
 };
 

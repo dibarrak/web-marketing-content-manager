@@ -35,9 +35,20 @@ export interface CsvFilterConfig<Row> {
   matches: (item: Row, selected: string) => boolean;
 }
 
+export interface CsvUniqueFieldConfig<Row> {
+  /** Used in error messages, e.g. "banner_id". */
+  label: string;
+  getValue: (row: Row) => string;
+}
+
 export interface CsvCollectionPageProps<Row> {
   displayName: string;
   singularName: string;
+  /**
+   * Filename always used on download, regardless of what the uploaded file
+   * was named — the consuming S3/app logic expects this exact name.
+   */
+  downloadFileName: string;
   /** Expected column set/order — an uploaded file must match exactly. */
   csvHeaders: readonly string[];
   /** Validates a single typed row (post csvRowToRow transform). */
@@ -50,6 +61,8 @@ export interface CsvCollectionPageProps<Row> {
   getCreateDefaults: (rows: Row[]) => Partial<Row>;
   /** Optional view-only filters — never affect what gets exported on download. */
   filters?: CsvFilterConfig<Row>[];
+  /** Optional cross-row uniqueness constraint, checked on upload, save, and download. */
+  uniqueField?: CsvUniqueFieldConfig<Row>;
   renderForm: (p: {
     defaultValues?: Partial<Row>;
     onSubmit: (row: Row) => void;
@@ -67,17 +80,18 @@ export interface CsvCollectionPageProps<Row> {
 function CsvCollectionPageInner<Row>({
   displayName,
   singularName,
+  downloadFileName,
   csvHeaders,
   schema,
   csvRowToRow,
   rowToCsvRow,
   getCreateDefaults,
   filters,
+  uniqueField,
   renderForm,
   renderCard,
 }: CsvCollectionPageProps<Row>) {
   const [rows, setRows] = useState<RowEntry<Row>[] | null>(null); // null = upload phase
-  const [fileName, setFileName] = useState('data.csv');
   const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -124,8 +138,28 @@ function CsvCollectionPageInner<Row>({
         return;
       }
 
+      if (uniqueField) {
+        const firstSeenAt = new Map<string, number>();
+        const dupErrors: string[] = [];
+        parsedRows.forEach((entry, i) => {
+          const lineNo = i + 2; // +1 for the header row, +1 for 1-indexing
+          const value = uniqueField.getValue(entry.data);
+          const firstLine = firstSeenAt.get(value);
+          if (firstLine !== undefined) {
+            dupErrors.push(
+              `Fila ${lineNo} (${uniqueField.label}): duplicado — ya se usó en la fila ${firstLine}.`,
+            );
+          } else {
+            firstSeenAt.set(value, lineNo);
+          }
+        });
+        if (dupErrors.length > 0) {
+          setUploadErrors(dupErrors);
+          return;
+        }
+      }
+
       setRows(parsedRows);
-      setFileName(file.name);
     } catch (err) {
       setUploadErrors([err instanceof Error ? err.message : 'No se pudo leer el archivo.']);
     } finally {
@@ -142,6 +176,16 @@ function CsvCollectionPageInner<Row>({
   const editingEntry = rows?.find((r) => r.key === editingKey);
 
   const handleSubmitForm = (row: Row) => {
+    if (uniqueField) {
+      const value = uniqueField.getValue(row);
+      const conflict = (rows ?? []).find(
+        (r) => r.key !== editingEntry?.key && uniqueField.getValue(r.data) === value,
+      );
+      if (conflict) {
+        toast.error(`Ya existe otro elemento con ${uniqueField.label} "${value}".`);
+        return;
+      }
+    }
     if (editingEntry) {
       setRows((prev) =>
         (prev ?? []).map((r) => (r.key === editingEntry.key ? { ...r, data: row } : r)),
@@ -177,9 +221,22 @@ function CsvCollectionPageInner<Row>({
       toast.error(`${invalid.length} fila(s) inválida(s) — corrígelas antes de descargar.`);
       return;
     }
+    if (uniqueField) {
+      const seen = new Set<string>();
+      const hasDupes = current.some((r) => {
+        const value = uniqueField.getValue(r.data);
+        if (seen.has(value)) return true;
+        seen.add(value);
+        return false;
+      });
+      if (hasDupes) {
+        toast.error(`Hay valores duplicados de ${uniqueField.label} — corrígelos antes de descargar.`);
+        return;
+      }
+    }
     const csvText = unparseCsv(csvHeaders, current.map((r) => rowToCsvRow(r.data)));
-    downloadCsv(fileName, csvText);
-    toast.success('CSV descargado', { description: fileName });
+    downloadCsv(downloadFileName, csvText);
+    toast.success('CSV descargado', { description: downloadFileName });
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -208,7 +265,7 @@ function CsvCollectionPageInner<Row>({
         </header>
 
         <div
-          className={`${fieldStyles.dropzone} ${dragging ? fieldStyles.dragging : ''}`}
+          className={`${fieldStyles.dropzone} ${fieldStyles.marginBottom} ${dragging ? fieldStyles.dragging : ''}`}
           onClick={() => inputRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();

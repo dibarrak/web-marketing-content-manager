@@ -1,20 +1,18 @@
-import { isAdBannerActive, type AdBannerFields } from '@lib/csv-modules/adBanners';
+import {
+  isOfferwallBannerActive,
+  OFFERWALL_ACTION_LABELS,
+  SEGMENT_LABELS,
+  type OfferwallBannerFields,
+} from '@lib/csv-modules/offerwallBanners';
 import { CopyPlus, ExternalLink, SquarePen, SquareX } from 'lucide-react';
 import styles from './collectionCard.module.scss';
 
 interface Props {
-  item: AdBannerFields;
+  item: OfferwallBannerFields;
   onEdit: () => void;
   onDelete: () => void;
   onDuplicate: () => void;
 }
-
-const SEGMENT_LABELS: Record<string, string> = {
-  anonymous: 'Anónimo',
-  first_time: 'Primera vez',
-  lead: 'Lead',
-  recurrent: 'Recurrente',
-};
 
 function fmt(dt: string): string {
   if (!dt) return '—';
@@ -22,8 +20,8 @@ function fmt(dt: string): string {
   return Number.isNaN(d.getTime()) ? dt : d.toLocaleString('es-MX');
 }
 
-export default function AdBannerCard({ item, onEdit, onDelete, onDuplicate }: Props) {
-  const isActive = isAdBannerActive(item);
+export default function OfferwallBannerCard({ item, onEdit, onDelete, onDuplicate }: Props) {
+  const isActive = isOfferwallBannerActive(item);
 
   return (
     <div className={styles.item}>
@@ -35,29 +33,43 @@ export default function AdBannerCard({ item, onEdit, onDelete, onDuplicate }: Pr
                 <span className={styles.label}>Imagen</span>
                 <div className={styles.imagePreviewWrap}>
                   <img
-                    src={item.image_url}
+                    src={item.background_image}
                     alt=""
                     loading="lazy"
-                    className={`${styles.bannerImageThumb} ${styles.adBanner}`}
+                    className={styles.bannerImageThumb}
                   />
                 </div>
               </div>
 
-              <span className={styles.label}>Click URL</span>
-              <p className={styles.urlRow}>
-                <span title={item.click_url}>{item.click_url}</span>
-                <a href={item.click_url} target="_blank" rel="noopener noreferrer" className={styles.urlLink}>
-                  <ExternalLink size={16} strokeWidth={3} />
-                </a>
-              </p>
+              <span className={styles.label}>Título</span>
+              <p>{item.title || '—'}</p>
+
+              <span className={styles.label}>Descripción</span>
+              <p>{item.description || '—'}</p>
+
+              <span className={styles.label}>CTA</span>
+              <p>{item.cta_text || '—'}</p>
+
+              <span className={styles.label}>{OFFERWALL_ACTION_LABELS[item.action]}</span>
+              {item.action === 'redirect-to-url' && (
+                <p className={styles.urlRow}>
+                  <span title={item.url}>{item.url}</span>
+                  <a href={item.url} target="_blank" rel="noopener noreferrer" className={styles.urlLink}>
+                    <ExternalLink size={16} strokeWidth={3} />
+                  </a>
+                  {item.external_browser && ' (navegador externo)'}
+                </p>
+              )}
+              {item.action === 'redirect-to-screen' && <p>{item.screen_path || '—'}</p>}
+              {item.action === 'simulate-click' && <p>Sin navegación</p>}
             </div>
 
-            <div className={`${styles.metaBlock} ${styles.noPadding}`}>
-              <span className={styles.label}>ID</span>
-              <p>{item.id}</p>
+            <div className={styles.metaBlock}>
+              <span className={styles.label}>Banner ID</span>
+              <p>{item.banner_id}</p>
 
-              <span className={styles.label}>Merchant</span>
-              <p>{item.merchant_id}</p>
+              <span className={styles.label}>Merchants</span>
+              <p>{item.merchant_ids.join(', ') || '—'}</p>
 
               <span className={styles.label}>Vigencia</span>
               <p>
@@ -66,6 +78,9 @@ export default function AdBannerCard({ item, onEdit, onDelete, onDuplicate }: Pr
 
               <span className={styles.label}>Segmentos</span>
               <p>{item.user_segment.map((s) => SEGMENT_LABELS[s] ?? s).join(', ') || '—'}</p>
+
+              <span className={styles.label}>Filtro</span>
+              <p>{item.filter.join(', ') || '—'}</p>
 
               <div className={styles.bannerActions}>
                 <button type="button" className={styles.duplicateBtn} onClick={onDuplicate}>

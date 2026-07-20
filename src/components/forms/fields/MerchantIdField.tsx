@@ -14,7 +14,7 @@ interface Props {
   help?: string;
 }
 
-async function fetchMerchants(): Promise<MerchantOption[]> {
+export async function fetchMerchants(): Promise<MerchantOption[]> {
   const res = await fetch(withBase('api/merchants?requireLogo=false'));
   if (!res.ok) throw new Error(`Error ${res.status}`);
   const data = (await res.json()) as { merchants: MerchantOption[] };
