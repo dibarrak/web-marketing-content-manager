@@ -61,6 +61,8 @@ export interface CsvCollectionPageProps<Row> {
   getCreateDefaults: (rows: Row[]) => Partial<Row>;
   /** Optional view-only filters — never affect what gets exported on download. */
   filters?: CsvFilterConfig<Row>[];
+  /** Optional free-text search — returns the haystack to match the query against (case-insensitive). View-only, like `filters`. */
+  search?: (item: Row) => string;
   /** Optional cross-row uniqueness constraint, checked on upload, save, and download. */
   uniqueField?: CsvUniqueFieldConfig<Row>;
   renderForm: (p: {
@@ -87,6 +89,7 @@ function CsvCollectionPageInner<Row>({
   rowToCsvRow,
   getCreateDefaults,
   filters,
+  search,
   uniqueField,
   renderForm,
   renderCard,
@@ -97,8 +100,12 @@ function CsvCollectionPageInner<Row>({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
-  const hasActiveFilters = Object.values(filterValues).some((v) => v);
-  const resetFilters = () => setFilterValues({});
+  const [searchQuery, setSearchQuery] = useState('');
+  const hasActiveFilters = Object.values(filterValues).some((v) => v) || !!searchQuery;
+  const resetFilters = () => {
+    setFilterValues({});
+    setSearchQuery('');
+  };
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -246,13 +253,18 @@ function CsvCollectionPageInner<Row>({
     if (f) void handleFile(f);
   };
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
   // View-only — the full `rows` list (unfiltered) is always what gets exported.
-  const visibleRows = (rows ?? []).filter((entry) =>
-    (filters ?? []).every((f) => {
+  const visibleRows = (rows ?? []).filter((entry) => {
+    if (normalizedQuery && !search?.(entry.data).toLowerCase().includes(normalizedQuery)) {
+      return false;
+    }
+    return (filters ?? []).every((f) => {
       const selected = filterValues[f.key] ?? '';
       return !selected || f.matches(entry.data, selected);
-    }),
-  );
+    });
+  });
 
   if (rows === null) {
     return (
@@ -325,9 +337,20 @@ function CsvCollectionPageInner<Row>({
         </div>
       </header>
 
-      {filters && filters.length > 0 && (
+      {(search || (filters && filters.length > 0)) && (
         <div className={styles.filters}>
-          {filters.map((f) => (
+          {search && (
+            <label className={styles.searchLabel}>
+              Buscar
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Buscar ${singularName.toLowerCase()}...`}
+              />
+            </label>
+          )}
+          {filters?.map((f) => (
             <label key={f.key}>
               {f.label}
               <select

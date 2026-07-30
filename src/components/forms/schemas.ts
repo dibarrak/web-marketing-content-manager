@@ -47,7 +47,7 @@ export const couponFilterSchema = z.object({
 export type CouponFilterFields = z.infer<typeof couponFilterSchema>;
 
 // Flow 3 — Hero Banners. Only some required (per stakeholder).
-const heroPageOption = z.enum(['Home', 'Promociones', 'Registrate Hoy', 'Amazon', 'Temu', 'Prototype']);
+const heroPageOption = z.enum(['Home', 'Promociones', 'Registrate Hoy', 'Amazon', 'Temu', 'Prototype', 'Longtail']);
 const buttonVariant = z.enum([
   'primary',
   'secondary',

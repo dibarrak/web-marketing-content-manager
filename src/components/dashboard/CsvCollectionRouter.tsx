@@ -72,6 +72,15 @@ const OFFERWALL_FILTERS: CsvFilterConfig<OfferwallBannerFields>[] = [
   },
 ];
 
+const searchAdBanner = (item: AdBannerFields) =>
+  [item.id, item.merchant_id, item.click_url].join(' ');
+
+const searchOfferwallBanner = (item: OfferwallBannerFields) =>
+  [item.banner_id, item.title, item.description, item.merchant_ids.join(' ')].join(' ');
+
+const searchHomeHeroBanner = (item: HomeHeroBannerFields) =>
+  [item.campaign_id, item.title, item.subtitle, item.merchant_id].join(' ');
+
 const HOME_HERO_FILTERS: CsvFilterConfig<HomeHeroBannerFields>[] = [
   {
     key: 'status',
@@ -111,6 +120,7 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         rowToCsvRow={adBannerToCsvRow}
         getCreateDefaults={(rows) => ({ id: nextAdBannerId(rows) })}
         filters={AD_BANNER_FILTERS}
+        search={searchAdBanner}
         renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
           <AdBannerForm
             defaultValues={defaultValues}
@@ -137,6 +147,7 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         rowToCsvRow={offerwallBannerToCsvRow}
         getCreateDefaults={() => ({})}
         filters={OFFERWALL_FILTERS}
+        search={searchOfferwallBanner}
         renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
           <OfferwallBannerForm
             defaultValues={defaultValues}
@@ -163,6 +174,7 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         rowToCsvRow={homeHeroBannerToCsvRow}
         getCreateDefaults={() => ({})}
         filters={HOME_HERO_FILTERS}
+        search={searchHomeHeroBanner}
         renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
           <HomeHeroBannerForm
             defaultValues={defaultValues}

@@ -25,7 +25,7 @@ interface Props {
   isEditing?: boolean;
 }
 
-const PAGE_OPTIONS = ['Home', 'Promociones', 'Registrate Hoy', 'Amazon', 'Temu', 'Prototype'] as const;
+const PAGE_OPTIONS = ['Home', 'Promociones', 'Registrate Hoy', 'Amazon', 'Temu', 'Prototype', 'Longtail'] as const;
 const BUTTON_VARIANTS = [
   'primary',
   'secondary',
