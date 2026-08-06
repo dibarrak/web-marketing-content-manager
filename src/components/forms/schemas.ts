@@ -172,9 +172,32 @@ export const blogPostSchema = z.object({
 });
 export type BlogPostFields = z.infer<typeof blogPostSchema>;
 
+// Flow 5 — Comercios destacados por categoría. Every field is required in
+// Webflow. `name` is the Merchant ID (not a display name), and the two
+// references are stored as Webflow item ids.
+export const merchantTypeOption = z.enum([
+  'en-linea',
+  'tienda-fisica',
+  'en-linea; tienda-fisica',
+]);
+/** Webflow Option names for `tipo-de-comercio`. Labels live in @lib/featured-merchants. */
+export type MerchantType = z.infer<typeof merchantTypeOption>;
+
+export const featuredMerchantSchema = z.object({
+  name: nameField,
+  slug: slugField,
+  // Webflow: integer, precision 1, negatives disallowed.
+  orden: z.number({ message: 'Requerido' }).int('Debe ser un número entero').min(0, 'No puede ser negativo'),
+  'nombre-del-comercio': z.string().min(1, 'Requerido'),
+  categoria: z.string().min(1, 'Requerido'),
+  'tipo-de-comercio': merchantTypeOption,
+});
+export type FeaturedMerchantFields = z.infer<typeof featuredMerchantSchema>;
+
 export const schemas = {
   coupons: couponSchema,
   couponFilterList: couponFilterSchema,
   heroBanners: heroBannerSchema,
   blogPosts: blogPostSchema,
+  featuredMerchants: featuredMerchantSchema,
 } as const;

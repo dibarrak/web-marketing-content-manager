@@ -1,17 +1,18 @@
 /**
  * GET /api/collections/:collectionId/reference-items
  *
- * Lists the items of a collection referenced by a Blog Post field, returning a
- * lightweight `{ id, name }[]` for populating reference/multi-reference pickers.
+ * Lists the items of a collection referenced by a managed collection's
+ * Reference/MultiReference field, returning a lightweight `{ id, name }[]` for
+ * populating the pickers.
  *
- * Access is limited to the collections enumerated in BLOG_REFERENCES (in the
- * "Cash" workspace) and gated behind blog-post access — this is not a generic
- * proxy for arbitrary collections.
+ * Access is limited to the collections registered in COLLECTION_REFERENCES and
+ * gated behind access to a collection that references them — this is not a
+ * generic proxy for arbitrary collections.
  */
 import type { APIRoute } from 'astro';
 import { getWebflow } from '@lib/webflow';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
-import { BLOG_REFERENCE_COLLECTION_IDS, COLLECTIONS } from '@lib/config/sites';
+import { COLLECTIONS, REFERENCE_OWNERS } from '@lib/config/sites';
 import { canAccessSection } from '@lib/authz';
 
 export const prerender = false;
@@ -26,14 +27,16 @@ export const GET: APIRoute = async ({ params, locals }) => {
   if (!user) return new Response('Unauthorized', { status: 401 });
 
   const collectionId = params.collectionId!;
-  if (!BLOG_REFERENCE_COLLECTION_IDS.has(collectionId))
-    return Response.json({ error: 'Unknown reference collection' }, { status: 404 });
-  // Reference pickers are only used from the Blog Posts editor, so gate on that.
-  if (!canAccessSection(user, 'blogPosts')) return new Response('Forbidden', { status: 403 });
+  const owners = REFERENCE_OWNERS.get(collectionId);
+  if (!owners) return Response.json({ error: 'Unknown reference collection' }, { status: 404 });
+  // Pickers are only reachable from the editor of a collection that references
+  // this one, so access to any owner is enough.
+  if (!owners.some((key) => canAccessSection(user, key)))
+    return new Response('Forbidden', { status: 403 });
 
   try {
-    // Referenced blog collections live in the same workspace as Blog Posts.
-    const wf = getWebflow(locals.runtime.env, COLLECTIONS.blogPosts.workspace);
+    // A referenced collection lives in the same workspace as its owner.
+    const wf = getWebflow(locals.runtime.env, COLLECTIONS[owners[0]].workspace);
     // Page through so pickers show every option (Webflow caps limit at 100).
     const options: ReferenceOption[] = [];
     let offset = 0;

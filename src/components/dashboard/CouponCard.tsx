@@ -2,6 +2,7 @@ import type { WebflowItem } from '@lib/api-client';
 import { getStatus, STATUS_LABELS } from '@lib/collection-status';
 import { CopyPlus, SquarePen, SquareX } from 'lucide-react';
 import styles from './collectionCard.module.scss';
+import PublishStateBadge from './PublishStateBadge';
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
 
@@ -92,6 +93,9 @@ export default function CouponCard({ item, onEdit, onDelete, onDuplicate, deleti
 
             {/* Right column — metadata and actions */}
             <div className={styles.metaBlock}>
+              <span className={styles.label}>Publicación</span>
+              <PublishStateBadge item={item} />
+
               <span className={styles.label}>Display</span>
               <DisplayValue value={display} />
 

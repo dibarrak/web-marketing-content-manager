@@ -17,8 +17,16 @@ export interface WebflowItem<T = Record<string, unknown>> {
 export interface WebflowListResponse<T = Record<string, unknown>> {
   items: WebflowItem<T>[];
   pagination: { limit: number; offset: number; total: number };
+  /** Set when the collection was too large to fetch in full — the list is a
+   *  partial view, so client-side sorting and filtering are incomplete. */
+  truncated?: boolean;
 }
 
+/**
+ * Every item in the collection. Sending no limit/offset makes the API page
+ * through Webflow server-side — the UI sorts and filters client-side, so it
+ * needs the complete set.
+ */
 export async function listItems<T = Record<string, unknown>>(collectionId: string) {
   const { data } = await api.get<WebflowListResponse<T>>(
     `/collections/${collectionId}/items`,
@@ -76,6 +84,27 @@ export async function listReferenceItems(collectionId: string) {
     `/collections/${collectionId}/reference-items`,
   );
   return data.options;
+}
+
+export interface BulkDeleteResult {
+  deleted: string[];
+  deletedCount: number;
+  /** How many of the deleted items were also unpublished from the live site. */
+  unpublished: number;
+  /** Items that were drafts, so there was nothing to unpublish. */
+  skippedDrafts: number;
+  missing?: string[];
+  unpublishFailures?: { ids: string[]; error: string }[];
+  deleteFailures?: { ids: string[]; error: string }[];
+}
+
+/** Unpublish + delete several items in two bulk Webflow calls per 100 items. */
+export async function bulkDeleteItems(collectionId: string, itemIds: string[]) {
+  const { data } = await api.post<BulkDeleteResult>(
+    `/collections/${collectionId}/items/bulk-delete`,
+    { itemIds },
+  );
+  return data;
 }
 
 export interface SitePublishStatus {

@@ -4,7 +4,12 @@
  * Update siteId values before deploying.
  */
 
-export type CollectionKey = 'coupons' | 'couponFilterList' | 'heroBanners' | 'blogPosts';
+export type CollectionKey =
+  | 'coupons'
+  | 'couponFilterList'
+  | 'heroBanners'
+  | 'blogPosts'
+  | 'featuredMerchants';
 
 /**
  * Which Webflow workspace a collection lives in. Each workspace has its own API
@@ -55,6 +60,16 @@ export const COLLECTIONS: Record<CollectionKey, CollectionConfig> = {
     singularName: 'Blog | Post',
     workspace: 'cash',
   },
+  featuredMerchants: {
+    key: 'featuredMerchants',
+    collectionId: '65f10880b89cfcd9e583e7e0',
+    siteId: '614d688b383096276930acef',
+    // Webflow's own singularName is "Comercios destacados por categorium" (a
+    // broken auto-pluralization). Using a readable one for the UI labels.
+    displayName: 'Comercios destacados por categoría',
+    singularName: 'Comercio destacado',
+    workspace: 'default',
+  },
 };
 
 export function findCollectionById(collectionId: string): CollectionConfig | undefined {
@@ -99,19 +114,20 @@ export function workspaceForSite(siteId: string): Workspace {
 }
 
 /* ------------------------------------------------------------------ *
- * Blog | Posts — referenced collections and default values.
+ * Reference fields — the collections that Reference/MultiReference form
+ * fields list to populate their pickers.
  *
- * The Blog Posts collection lives in the "Cash" workspace and links to six
- * sibling collections (all in the same site, reachable with WEBFLOW_TOKEN_CASH).
- * The reference/multi-reference form fields populate their pickers by listing
- * these. Schemas were captured during onboarding.
+ * Registering a referenced collection here is what allows the
+ * `/api/collections/:id/reference-items` endpoint to list it: the route is an
+ * allowlist, not a generic proxy. The owning collection determines both the
+ * access check and which workspace token is used.
  * ------------------------------------------------------------------ */
 
-/** A collection referenced by a Blog Post field. `multiple` → MultiReference. */
-export interface BlogReference {
-  /** The Blog Post field slug that points here. */
+/** A collection referenced by a field of a managed collection. */
+export interface CollectionReference {
+  /** The owning collection's field slug that points here. */
   fieldSlug: string;
-  /** The referenced collection id (in the Cash workspace). */
+  /** The referenced collection id (same workspace as the owner). */
   collectionId: string;
   /** Label shown above the picker. */
   label: string;
@@ -119,7 +135,11 @@ export interface BlogReference {
   multiple: boolean;
 }
 
-export const BLOG_REFERENCES: BlogReference[] = [
+/**
+ * Blog | Posts links to six sibling collections, all in the "Cash" workspace
+ * and reachable with WEBFLOW_TOKEN_CASH. Schemas captured during onboarding.
+ */
+export const BLOG_REFERENCES: CollectionReference[] = [
   { fieldSlug: 'post-category', collectionId: '68003ff43f483a200f911121', label: 'Categoría', multiple: false },
   { fieldSlug: 'post-subcategory', collectionId: '68003ff43f483a200f911121', label: 'Subcategoría', multiple: false },
   { fieldSlug: 'post-author-reviewer', collectionId: '68003b8f2c21c30e23bb24e0', label: 'Autor y revisor', multiple: false },
@@ -129,10 +149,67 @@ export const BLOG_REFERENCES: BlogReference[] = [
   { fieldSlug: 'post-cta', collectionId: '68003f9342ec07b1b8eb5538', label: 'CTA', multiple: true },
 ];
 
-/** Every collection id the Cash token is allowed to list for the blog pickers. */
-export const BLOG_REFERENCE_COLLECTION_IDS: ReadonlySet<string> = new Set(
-  BLOG_REFERENCES.map((r) => r.collectionId),
-);
+/**
+ * "Comercios destacados por categoría" links to the Merchants and Merchant
+ * Categories collections — both in the same site/workspace as the owner.
+ */
+export const FEATURED_MERCHANT_REFERENCES: CollectionReference[] = [
+  {
+    fieldSlug: 'nombre-del-comercio',
+    collectionId: '65f10880b89cfcd9e583e557',
+    label: 'Nombre del comercio',
+    multiple: false,
+  },
+  {
+    fieldSlug: 'categoria',
+    collectionId: '65f10880b89cfcd9e583e5da',
+    label: 'Categoría',
+    multiple: false,
+  },
+];
+
+/** Reference fields per managed collection. */
+export const COLLECTION_REFERENCES: Partial<Record<CollectionKey, CollectionReference[]>> = {
+  blogPosts: BLOG_REFERENCES,
+  featuredMerchants: FEATURED_MERCHANT_REFERENCES,
+};
+
+/**
+ * Referenced collection id → the managed collections that reference it. Listing
+ * a referenced collection is allowed when the user can access at least one
+ * owner; the Webflow token comes from the first owner (a referenced collection
+ * always lives in its owners' workspace).
+ */
+export const REFERENCE_OWNERS: ReadonlyMap<string, CollectionKey[]> = (() => {
+  const owners = new Map<string, CollectionKey[]>();
+  for (const [key, refs] of Object.entries(COLLECTION_REFERENCES) as [
+    CollectionKey,
+    CollectionReference[],
+  ][]) {
+    for (const ref of refs) {
+      const list = owners.get(ref.collectionId) ?? [];
+      if (!list.includes(key)) list.push(key);
+      owners.set(ref.collectionId, list);
+    }
+  }
+  return owners;
+})();
+
+/**
+ * Referenced collection id for one of a collection's reference fields. Throws
+ * on an unregistered slug — a missing entry is a wiring bug, not a runtime
+ * condition to handle.
+ */
+export function referenceCollectionId(
+  collectionKey: CollectionKey,
+  fieldSlug: string,
+): string {
+  const ref = COLLECTION_REFERENCES[collectionKey]?.find((r) => r.fieldSlug === fieldSlug);
+  if (!ref) {
+    throw new Error(`No reference registered for ${collectionKey}.${fieldSlug}`);
+  }
+  return ref.collectionId;
+}
 
 /**
  * Default field values applied when creating a new Blog Post. Reference

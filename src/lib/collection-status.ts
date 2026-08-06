@@ -19,13 +19,28 @@ export function getStatus(display: string | undefined): StatusKey {
   return now >= start && now <= end ? 'active' : 'inactive';
 }
 
+/**
+ * The date-range field that drives an item's visibility status, per collection.
+ * Collections absent from this map have no date-range concept: `blogPosts`
+ * derives its badge from publish state instead, and `featuredMerchants` has no
+ * status at all (its items are always live once published).
+ */
+const DISPLAY_FIELDS: Partial<Record<CollectionKey, string>> = {
+  coupons: 'coupon-display',
+  couponFilterList: 'coupon-display',
+  heroBanners: 'fechas-despliegue',
+};
+
 export function getDisplayField(
   collectionKey: CollectionKey,
   fieldData: Record<string, unknown>,
 ): string | undefined {
-  const raw =
-    collectionKey === 'heroBanners'
-      ? fieldData['fechas-despliegue']
-      : fieldData['coupon-display'];
+  const slug = DISPLAY_FIELDS[collectionKey];
+  const raw = slug ? fieldData[slug] : undefined;
   return typeof raw === 'string' ? raw : undefined;
+}
+
+/** Whether the date-range status badge and filter are meaningful here. */
+export function hasDateRangeStatus(collectionKey: CollectionKey): boolean {
+  return collectionKey in DISPLAY_FIELDS;
 }

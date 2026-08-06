@@ -213,13 +213,13 @@
   align-items: center;
   justify-content: center;
   writing-mode: vertical-rl;
-  // rotate so text reads bottom → top
   transform: rotate(180deg);
   text-transform: uppercase;
   color: white;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 1.5px;
+  border-radius: 0.5rem 0 0 0.5rem;
 
   &.active {
     background-color: $color-success;
@@ -251,6 +251,35 @@
   }
   &.loading {
     color: $color-text-muted;
+  }
+}
+
+// Whether the item itself is live in the Webflow CMS (isDraft/lastPublished).
+// Distinct from .sideStatus (date-range visibility) and .siteLiveNote (whether
+// the site has been republished since this item changed).
+.publishState {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 2px $space-2; 
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: $space-2;
+
+  &.published {
+    background: rgba($color-success, 0.12);
+    color: $color-success;
+    border: 1px solid rgba($color-success, 0.35);
+  }
+
+  &.draft {
+    background: rgba($color-warning, 0.12);
+    color: $color-warning;
+    border: 1px solid rgba($color-warning, 0.35);
   }
 }
 

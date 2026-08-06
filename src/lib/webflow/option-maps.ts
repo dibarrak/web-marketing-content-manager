@@ -48,8 +48,17 @@ const HERO_BANNER_OPTIONS: OptionMap = {
   },
 };
 
+const FEATURED_MERCHANT_OPTIONS: OptionMap = {
+  'tipo-de-comercio': {
+    df0c640811023e03f6ceff67d507f234: 'en-linea',
+    c794f73a63e3c4c1931dc0cffca34351: 'tienda-fisica',
+    d78cf16f0b7983a0f205cdee5382194d: 'en-linea; tienda-fisica',
+  },
+};
+
 const MAPS: Partial<Record<CollectionKey, OptionMap>> = {
   heroBanners: HERO_BANNER_OPTIONS,
+  featuredMerchants: FEATURED_MERCHANT_OPTIONS,
 };
 
 /** Returns the human-readable name for an Option value, or the raw value if unknown. */

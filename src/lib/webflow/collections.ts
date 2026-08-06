@@ -20,6 +20,9 @@ export interface ListItemsResponse<TFields = Record<string, unknown>> {
   pagination: { limit: number; offset: number; total: number };
 }
 
+/** Webflow's documented cap for the bulk item endpoints (unpublish/delete). */
+export const BULK_ITEM_LIMIT = 100;
+
 export interface ListItemsOpts {
   limit?: number; // max 100
   offset?: number;
@@ -71,6 +74,29 @@ export function createCollectionsApi(client: WebflowClient) {
     remove(collectionId: string, itemId: string) {
       return client.request<void>(`/collections/${collectionId}/items/${itemId}`, {
         method: 'DELETE',
+      });
+    },
+
+    /**
+     * Unpublish items from the live site. Verified against the live site: the
+     * item disappears from published collection lists immediately, with no site
+     * republish needed. Does NOT delete — it flips `isDraft` to true and clears
+     * `lastPublished`, so pair it with `removeMany` for a full delete.
+     *
+     * Caller must respect BULK_ITEM_LIMIT.
+     */
+    unpublishMany(collectionId: string, itemIds: string[]) {
+      return client.request<void>(`/collections/${collectionId}/items/live`, {
+        method: 'DELETE',
+        body: { items: itemIds.map((id) => ({ id })) },
+      });
+    },
+
+    /** Delete items from the CMS (staged). Caller must respect BULK_ITEM_LIMIT. */
+    removeMany(collectionId: string, itemIds: string[]) {
+      return client.request<void>(`/collections/${collectionId}/items`, {
+        method: 'DELETE',
+        body: { items: itemIds.map((id) => ({ id })) },
       });
     },
 

@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import styles from './dashboard.module.scss';
 
 interface Props {
   open: boolean;
   title: string;
-  message: string;
+  /** Plain text, or inline nodes — it renders inside a `<p>`. */
+  message: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   destructive?: boolean;

@@ -1,4 +1,5 @@
 import type { SitePublishStatus, WebflowItem } from '@lib/api-client';
+import { getPublishState, PUBLISH_STATE_LABELS } from '@lib/publish-state';
 import { CopyPlus, SquarePen, SquareX } from 'lucide-react';
 import styles from './collectionCard.module.scss';
 
@@ -25,8 +26,7 @@ function siteLiveNote(
   item: WebflowItem<AnyFields>,
   sitePublish: SitePublishStatus | undefined,
 ): { text: string; tone: 'live' | 'pending' | 'loading' } | null {
-  const liveInCms = !item.isDraft && !!item.lastPublished;
-  if (!liveInCms) return null; // side ribbon already reads "Borrador"
+  if (getPublishState(item) === 'draft') return null; // side ribbon already reads "Borrador"
   if (!sitePublish) return { text: 'Verificando estado del sitio…', tone: 'loading' };
 
   const itemPublishedAt = new Date(item.lastPublished!).getTime();
@@ -67,9 +67,9 @@ export default function BlogPostCard({
   sitePublishStatus,
 }: Props) {
   const f = item.fieldData;
-  const published = !item.isDraft && !!item.lastPublished;
+  const published = getPublishState(item) === 'published';
   const status = published ? 'active' : 'hidden';
-  const statusLabel = published ? 'Publicado' : 'Borrador';
+  const statusLabel = PUBLISH_STATE_LABELS[published ? 'published' : 'draft'];
   const lastUpdated = item.lastUpdated
     ? new Date(item.lastUpdated).toLocaleString('es-MX')
     : '—';

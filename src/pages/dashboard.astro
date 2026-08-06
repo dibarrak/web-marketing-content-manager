@@ -5,7 +5,7 @@ import { CSV_COLLECTIONS } from '@lib/config/csvCollections';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
 import { canAccessCollection, canAccessSection, isAdmin } from '@lib/authz';
-import { Ticket, Tickets, BookX, Globe, RefreshCw, Newspaper, FileSpreadsheet } from 'lucide-react';
+import { Ticket, Tickets, BookX, Globe, RefreshCw, Newspaper, FileSpreadsheet, Store } from 'lucide-react';
 
 export const prerender = false;
 
@@ -28,6 +28,7 @@ const collectionIconMap = {
   '6961886320253700c1e5baf5': Tickets,
   '69865d518920fb1ddd9007f3': BookX,
   '680047a242ec07b1b8f10f55': Newspaper,
+  '65f10880b89cfcd9e583e7e0': Store,
 };
 
 const counts = await Promise.all(

@@ -39,6 +39,12 @@ export const FIELD_LABELS: Record<string, string> = {
   'logo-de-merchant': 'Logo del merchant',
   'texto-alterno-logo-merchant': 'Texto alterno del logo del merchant',
   'variante-de-gradiente': 'Variante de gradiente',
+
+  // Comercios destacados por categoría
+  orden: 'Orden',
+  'nombre-del-comercio': 'Nombre del comercio',
+  categoria: 'Categoría',
+  'tipo-de-comercio': 'Tipo de comercio',
 };
 
 export function labelFor(slug: string): string {

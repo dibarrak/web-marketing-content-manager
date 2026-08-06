@@ -1,5 +1,5 @@
-import { listReferenceItems, type ReferenceOption } from '@lib/api-client';
-import { useQuery } from '@tanstack/react-query';
+import { type ReferenceOption } from '@lib/api-client';
+import { useReferenceOptions } from '@lib/reference-options';
 import { useMemo, useRef, useState } from 'react';
 import styles from './fields.module.scss';
 import { useOutsideClose } from './useOutsideClose';
@@ -11,14 +11,6 @@ interface BaseProps {
   required?: boolean;
   error?: string;
   help?: string;
-}
-
-function useReferenceOptions(refCollectionId: string) {
-  return useQuery({
-    queryKey: ['reference-items', refCollectionId],
-    queryFn: () => listReferenceItems(refCollectionId),
-    staleTime: 5 * 60 * 1000, // options change rarely; cache for the session
-  });
 }
 
 /* ------------------------------- single ------------------------------- */

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { CopyPlus, SquarePen, SquareX } from 'lucide-react';
 import styles from "./collectionCard.module.scss";
+import PublishStateBadge from './PublishStateBadge';
 
 type AnyFields = Record<string, unknown> & { name: string; slug: string };
 
@@ -242,6 +243,9 @@ export default function HeroBannerCard({
 
             {/* Right column — operational data */}
             <div className={`${styles.metaBlock} ${styles.bannerMeta}`}>
+              <span className={styles.label}>Publicación</span>
+              <PublishStateBadge item={item} />
+
               <span className={styles.label}>Sitio de destino</span>
               <p className={styles.siteTargetWrapper}>
                 <span className={styles.siteTarget}>
