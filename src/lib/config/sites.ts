@@ -103,6 +103,26 @@ export const BENEFITS_COLLECTION = {
   displayName: 'Benefit x merchants (Landing)',
 } as const;
 
+/**
+ * Merchants collection, managed through the CSV sync flow (preview → apply),
+ * NOT the standard per-item CRUD — kept out of COLLECTIONS for the same
+ * reason as BENEFITS_COLLECTION. Deleting a Merchant requires first deleting
+ * the "Tiendas" item that references it (Webflow blocks the delete
+ * otherwise); Tiendas carries its own `merchant-id` field so the sync can
+ * match it without resolving Webflow reference ids.
+ */
+export const MERCHANT_SYNC = {
+  merchantsCollectionId: '65f10880b89cfcd9e583e557',
+  tiendasCollectionId: '67a4fdf9bf5d5967b140a9a4',
+  categoryCollectionId: '65f10880b89cfcd9e583e5da',
+  channelCollectionId: '65f10880b89cfcd9e583e585',
+  siteId: '614d688b383096276930acef',
+  workspace: 'default' as Workspace,
+  displayName: 'Merchants',
+  /** PlainText field on both collections used to match rows. */
+  merchantIdFieldSlug: 'merchant-id',
+} as const;
+
 /** Workspace that owns a collection, resolved by collection id. */
 export function workspaceForCollection(collectionId: string): Workspace {
   return findCollectionById(collectionId)?.workspace ?? 'default';

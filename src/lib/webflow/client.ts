@@ -11,6 +11,8 @@ export class WebflowApiError extends Error {
     public code: string,
     message: string,
     public details?: unknown,
+    /** Seconds to wait before retrying — parsed from a 429's Retry-After header. */
+    public retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = 'WebflowApiError';
@@ -54,8 +56,15 @@ export function createWebflowClient(token: string) {
     const res = await fetch(url.toString(), { method: opts.method ?? 'GET', headers, body });
 
     if (res.status === 429) {
-      const retry = res.headers.get('Retry-After') ?? '60';
-      throw new WebflowApiError(429, 'RATE_LIMIT', `Webflow rate limit hit, retry after ${retry}s`);
+      const header = res.headers.get('Retry-After');
+      const retrySeconds = header && !Number.isNaN(Number(header)) ? Number(header) : undefined;
+      throw new WebflowApiError(
+        429,
+        'RATE_LIMIT',
+        `Webflow rate limit hit, retry after ${retrySeconds ?? '?'}s`,
+        undefined,
+        retrySeconds,
+      );
     }
 
     if (!res.ok) {

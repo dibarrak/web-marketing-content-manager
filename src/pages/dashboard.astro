@@ -1,6 +1,6 @@
 ---
 import AppLayout from '@layouts/AppLayout.astro';
-import { COLLECTIONS, BENEFITS_COLLECTION } from '@lib/config/sites';
+import { COLLECTIONS, BENEFITS_COLLECTION, MERCHANT_SYNC } from '@lib/config/sites';
 import { CSV_COLLECTIONS } from '@lib/config/csvCollections';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
@@ -102,6 +102,12 @@ const counts = await Promise.all(
               <h2>{BENEFITS_COLLECTION.displayName}</h2>
               <p class="muted">Sincroniza promociones desde Google Sheets</p>
               <p class="muted site-id-tag"><Globe size={16} /><span>{BENEFITS_COLLECTION.siteId}</span></p>
+            </a>
+            <a class="card" href={withBase('merchants/sync')}>
+              <RefreshCw size={32} />
+              <h2>{MERCHANT_SYNC.displayName}</h2>
+              <p class="muted">Procesa altas, actualizaciones y bajas desde un CSV</p>
+              <p class="muted site-id-tag"><Globe size={16} /><span>{MERCHANT_SYNC.siteId}</span></p>
             </a>
           </div>
         </section>
