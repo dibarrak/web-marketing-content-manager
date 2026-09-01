@@ -70,6 +70,10 @@ export interface CsvCollectionPageProps<Row> {
     onSubmit: (row: Row) => void;
     onCancel: () => void;
     isEditing: boolean;
+    /** Every other row currently loaded (excludes the one being edited) —
+     * for cross-row hints a form may want (e.g. duplicate id warnings).
+     * Most collections ignore this. */
+    allRows: Row[];
   }) => ReactNode;
   renderCard: (p: {
     item: Row;
@@ -427,6 +431,7 @@ function CsvCollectionPageInner<Row>({
             onSubmit: handleSubmitForm,
             onCancel: closeForm,
             isEditing: !!editingEntry,
+            allRows: (rows ?? []).filter((r) => r.key !== editingEntry?.key).map((r) => r.data),
           })}
         </FormModal>
       )}

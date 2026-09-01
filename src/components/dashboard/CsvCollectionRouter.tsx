@@ -175,12 +175,13 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         getCreateDefaults={() => ({})}
         filters={HOME_HERO_FILTERS}
         search={searchHomeHeroBanner}
-        renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
+        renderForm={({ defaultValues, onSubmit, onCancel, isEditing, allRows }) => (
           <HomeHeroBannerForm
             defaultValues={defaultValues}
             onSubmit={onSubmit}
             onCancel={onCancel}
             isEditing={isEditing}
+            existingCampaignIds={allRows.map((r) => r.campaign_id)}
           />
         )}
         renderCard={({ item, onEdit, onDuplicate, onDelete }) => (

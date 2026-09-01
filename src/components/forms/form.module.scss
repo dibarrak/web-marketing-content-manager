@@ -105,3 +105,46 @@
 .fieldName {
   font-weight: 600;
 }
+
+.warningSummary {
+  padding: $space-3 $space-4;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid $color-warning;
+  border-radius: $radius-md;
+  color: $color-warning;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  ul {
+    margin: 0;
+    padding-left: $space-5;
+  }
+}
+
+.suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+  flex-wrap: wrap;
+  padding: $space-3 $space-4;
+  background: $color-primary-soft;
+  border: 1px solid $color-primary;
+  border-radius: $radius-md;
+  color: $color-text;
+  font-size: 13px;
+}
+
+.suggestionApply {
+  @include button-base;
+  background: $color-primary;
+  color: white;
+  padding: $space-1 $space-3;
+  font-size: 13px;
+  flex: 0 0 auto;
+  &:hover {
+    background: $color-primary-hover;
+  }
+}

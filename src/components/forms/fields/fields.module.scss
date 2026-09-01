@@ -49,6 +49,11 @@
   font-size: 12px;
 }
 
+.warning {
+  color: $color-warning;
+  font-size: 12px;
+}
+
 .dropzone {
   border: 2px dashed $color-border;
   border-radius: $radius-md;

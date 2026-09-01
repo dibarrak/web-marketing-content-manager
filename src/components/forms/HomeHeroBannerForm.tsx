@@ -1,15 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  type ContentField,
+  hasDuplicateCampaignId,
   HOME_HERO_SEGMENT_LABELS,
   HOME_HERO_USER_SEGMENTS,
   homeHeroBannerSchema,
-  KNOWN_TEMPLATE_IDS,
+  isMerchantIdLikelyValid,
+  suggestTemplate,
+  TEMPLATE_IDS,
+  TEMPLATE_LABELS,
+  templateVariantFor,
   type HomeHeroBannerFields,
 } from '@lib/csv-modules/homeHeroBanners';
+import { useEffect, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { CheckboxGroupField } from './fields/CheckboxGroupField';
 import fieldStyles from './fields/fields.module.scss';
 import MerchantIdField from './fields/MerchantIdField';
+import { SelectField } from './fields/SelectField';
+import { SwitchField } from './fields/SwitchField';
 import { TextField } from './fields/TextField';
 import styles from './form.module.scss';
 import FormErrorSummary from './FormErrorSummary';
@@ -20,6 +29,9 @@ interface Props {
   onCancel?: () => void;
   submitting?: boolean;
   isEditing?: boolean;
+  /** campaign_id of every other row currently loaded — powers the
+   * non-blocking duplicate hint. */
+  existingCampaignIds?: string[];
 }
 
 const EMPTY: HomeHeroBannerFields = {
@@ -41,8 +53,26 @@ const EMPTY: HomeHeroBannerFields = {
   user_segment: [],
   start_date: '',
   end_date: '',
-  template_id: '',
+  template_id: 'template_1',
+  has_cta: false,
 };
+
+/** Label + input type for each template-conditional content field. */
+const CONTENT_FIELD_CONFIG: Record<ContentField, { label: string; type?: string }> = {
+  title: { label: 'Título' },
+  subtitle: { label: 'Subtítulo' },
+  caption: { label: 'Caption' },
+  discount_amount: { label: 'Discount amount', type: 'number' },
+  discount_percentage: { label: 'Discount percentage', type: 'number' },
+  cashback_amount: { label: 'Cashback amount', type: 'number' },
+  cashback_percentage: { label: 'Cashback percentage', type: 'number' },
+  coupon: { label: 'Coupon' },
+  coupon_caption: { label: 'Coupon caption' },
+  logo_url: { label: 'Logo URL', type: 'url' },
+  cta: { label: 'CTA' },
+  click_url: { label: 'Click URL' },
+};
+const CONTENT_FIELD_KEYS = Object.keys(CONTENT_FIELD_CONFIG) as ContentField[];
 
 export default function HomeHeroBannerForm({
   defaultValues,
@@ -50,22 +80,62 @@ export default function HomeHeroBannerForm({
   onCancel,
   submitting,
   isEditing,
+  existingCampaignIds = [],
 }: Props) {
   const {
     register,
     control,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<HomeHeroBannerFields>({
     resolver: zodResolver(homeHeroBannerSchema),
     defaultValues: { ...EMPTY, ...defaultValues },
-    mode: 'onBlur',
+    // onChange (not onBlur, unlike the other CSV forms) so template
+    // mismatch/required-field errors surface in real time as the user
+    // switches template/CTA or types content, per stakeholder request.
+    mode: 'onChange',
     shouldFocusError: false,
   });
 
   const backgroundUrl = watch('background_url');
   const logoUrl = watch('logo_url');
+  const templateId = watch('template_id');
+  const hasCta = watch('has_cta');
+  const campaignId = watch('campaign_id');
+  const merchantId = watch('merchant_id');
+  const contentValues = watch(CONTENT_FIELD_KEYS);
+
+  const variant = templateVariantFor(templateId, hasCta);
+  const allowedFields = new Set(variant.fields);
+  const requiredFields = new Set(variant.fields.filter((f) => !variant.optionalFields?.includes(f)));
+
+  const filledFields = new Set<ContentField>(
+    CONTENT_FIELD_KEYS.filter((_field, i) => (contentValues[i] ?? '').trim() !== ''),
+  );
+  const isExactMatch =
+    filledFields.size === requiredFields.size && [...requiredFields].every((f) => filledFields.has(f));
+  const suggested = suggestTemplate(filledFields, hasCta);
+  const showSuggestion = !!suggested && suggested !== templateId && !isExactMatch;
+
+  // Clear content fields that no longer apply when the template/CTA toggle
+  // changes, so a stale value from a previous template can't sneak into the
+  // submit — same pattern as OfferwallBannerForm's action-dependent fields.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    CONTENT_FIELD_KEYS.forEach((field) => {
+      if (!allowedFields.has(field)) setValue(field, '', { shouldValidate: true });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateId, hasCta]);
+
+  const campaignIdDuplicate = hasDuplicateCampaignId(campaignId, existingCampaignIds);
+  const merchantIdWarning = !isMerchantIdLikelyValid(merchantId);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -80,67 +150,74 @@ export default function HomeHeroBannerForm({
           error={errors.campaign_id?.message}
           help={isEditing ? undefined : 'Los duplicados son válidos en este archivo.'}
         />
+        {campaignIdDuplicate && (
+          <small className={fieldStyles.warning}>
+            Ya existe otro registro con este Campaign ID — revisa si es intencional (ej. campaña BAU con varios
+            tramos de fecha).
+          </small>
+        )}
+      </fieldset>
+
+      <fieldset className={styles.fieldset}>
+        <legend>Template</legend>
+        <SelectField
+          label="Template ID"
+          required
+          options={TEMPLATE_IDS.map((id) => ({ value: id, label: TEMPLATE_LABELS[id] }))}
+          {...register('template_id')}
+          error={errors.template_id?.message}
+        />
+        <SwitchField label="¿Tiene CTA?" {...register('has_cta')} />
+        {showSuggestion && suggested && (
+          <div className={styles.suggestion}>
+            <span>
+              El contenido que llenaste coincide con <strong>{TEMPLATE_LABELS[suggested]}</strong>.
+            </span>
+            <button
+              type="button"
+              className={styles.suggestionApply}
+              onClick={() => setValue('template_id', suggested, { shouldValidate: true })}
+            >
+              Cambiar a este template
+            </button>
+          </div>
+        )}
       </fieldset>
 
       <fieldset className={styles.fieldset}>
         <legend>Contenido</legend>
-        <TextField label="Título" required {...register('title')} error={errors.title?.message} />
-        <TextField label="Subtítulo" required {...register('subtitle')} error={errors.subtitle?.message} />
-        <TextField label="Caption" {...register('caption')} error={errors.caption?.message} />
-        <TextField label="CTA" {...register('cta')} error={errors.cta?.message} />
+        {CONTENT_FIELD_KEYS.filter((field) => allowedFields.has(field))
+          .map((field) => {
+            const cfg = CONTENT_FIELD_CONFIG[field];
+            return (
+              <TextField
+                key={field}
+                label={cfg.label}
+                type={cfg.type}
+                step={cfg.type === 'number' ? 'any' : undefined}
+                required={requiredFields.has(field)}
+                {...register(field)}
+                error={errors[field]?.message}
+              />
+            );
+          })}
+        {allowedFields.size === 0 && (
+          <small className={fieldStyles.help}>Este template no define campos de contenido.</small>
+        )}
+        {logoUrl && allowedFields.has('logo_url') && (
+          <img
+            src={logoUrl}
+            alt=""
+            className={fieldStyles.urlPreviewImg}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        )}
       </fieldset>
 
       <fieldset className={styles.fieldset}>
-        <legend>Descuento / cashback</legend>
-        <div className={styles.grid}>
-          <TextField
-            label="Discount amount"
-            type="number"
-            step="any"
-            {...register('discount_amount')}
-            error={errors.discount_amount?.message}
-          />
-          <TextField
-            label="Discount percentage"
-            type="number"
-            step="any"
-            {...register('discount_percentage')}
-            error={errors.discount_percentage?.message}
-          />
-          <TextField
-            label="Cashback amount"
-            type="number"
-            step="any"
-            {...register('cashback_amount')}
-            error={errors.cashback_amount?.message}
-          />
-          <TextField
-            label="Cashback percentage"
-            type="number"
-            step="any"
-            {...register('cashback_percentage')}
-            error={errors.cashback_percentage?.message}
-          />
-        </div>
-        <small className={fieldStyles.help}>
-          Campos independientes — puedes dejar los 4 vacíos si el copy ya viene armado en Título/Subtítulo.
-        </small>
-      </fieldset>
-
-      <fieldset className={styles.fieldset}>
-        <legend>Cupón</legend>
-        <div className={styles.grid}>
-          <TextField label="Coupon" {...register('coupon')} error={errors.coupon?.message} />
-          <TextField
-            label="Coupon caption"
-            {...register('coupon_caption')}
-            error={errors.coupon_caption?.message}
-          />
-        </div>
-      </fieldset>
-
-      <fieldset className={styles.fieldset}>
-        <legend>Imágenes y acción</legend>
+        <legend>Imagen de fondo</legend>
         <TextField
           label="Background URL"
           required
@@ -159,23 +236,6 @@ export default function HomeHeroBannerForm({
             }}
           />
         )}
-        <TextField label="Logo URL" type="url" {...register('logo_url')} error={errors.logo_url?.message} />
-        {logoUrl && (
-          <img
-            src={logoUrl}
-            alt=""
-            className={fieldStyles.urlPreviewImg}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-          />
-        )}
-        <TextField
-          label="Click URL"
-          {...register('click_url')}
-          error={errors.click_url?.message}
-          help="URL normal (https://…) o deep link de la app (ej. kueskios://cash). Puede quedar vacío si el banner no navega a ningún lado."
-        />
       </fieldset>
 
       <fieldset className={styles.fieldset}>
@@ -193,6 +253,9 @@ export default function HomeHeroBannerForm({
             />
           )}
         />
+        {merchantIdWarning && (
+          <small className={fieldStyles.warning}>Normalmente es numérico — verifica que sea correcto.</small>
+        )}
       </fieldset>
 
       <fieldset className={styles.fieldset}>
@@ -230,17 +293,6 @@ export default function HomeHeroBannerForm({
               error={errors.user_segment?.message}
             />
           )}
-        />
-      </fieldset>
-
-      <fieldset className={styles.fieldset}>
-        <legend>Template</legend>
-        <TextField
-          label="Template ID"
-          required
-          {...register('template_id')}
-          error={errors.template_id?.message}
-          help={`Texto libre. Valores conocidos: ${KNOWN_TEMPLATE_IDS.join(', ')}.`}
         />
       </fieldset>
 
