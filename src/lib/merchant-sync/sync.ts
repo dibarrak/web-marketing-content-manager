@@ -1,3 +1,5 @@
+import { slugify } from '../slug';
+
 /**
  * Merchant sync — pure diff engine.
  *
@@ -317,7 +319,7 @@ function buildEntry(
     const fieldData: Record<string, unknown> = {
       [F.merchantId]: row.merchantId,
       name: row.name,
-      slug: row.merchantId,
+      slug: slugify(row.name),
       [F.category]: category!.id,
       [F.channel]: channelIds,
     };

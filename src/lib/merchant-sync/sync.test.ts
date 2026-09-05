@@ -114,7 +114,7 @@ describe('computeMerchantDiff — Alta', () => {
     expect(report.counts.create).toBe(1);
     const e = report.entries[0];
     expect(e.fieldData[F.merchantId]).toBe('992611113934423');
-    expect(e.fieldData.slug).toBe('992611113934423');
+    expect(e.fieldData.slug).toBe('bombavista');
     expect(e.fieldData[F.category]).toBe('cat-moda');
     expect(e.fieldData[F.channel]).toEqual(['chan-online', 'chan-fisica']);
     expect(e.fieldData[F.website]).toBe('https://bombavista.mx/');
