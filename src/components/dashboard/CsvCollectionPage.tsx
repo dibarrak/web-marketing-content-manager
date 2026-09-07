@@ -1,7 +1,7 @@
 import { withBase } from '@lib/base-path';
 import { downloadCsv, parseCsvFile, unparseCsv, validateHeaders } from '@lib/csv';
-import { ArrowLeft, CirclePlus, Download } from 'lucide-react';
-import { useRef, useState, type ReactNode } from 'react';
+import { ArrowLeft, CirclePlus, Download, ListChecks, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Toaster, toast } from 'sonner';
 import type { ZodType } from 'zod';
 import fieldStyles from '../forms/fields/fields.module.scss';
@@ -115,6 +115,56 @@ function CsvCollectionPageInner<Row>({
   const [creating, setCreating] = useState(false);
   const [createDefaults, setCreateDefaults] = useState<Partial<Row> | undefined>(undefined);
   const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmingBulk, setConfirmingBulk] = useState(false);
+  /** Checkboxes stay hidden until the user opts into selection mode. */
+  const [selectionMode, setSelectionMode] = useState(false);
+
+  const toggleSelected = (key: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelected(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    setRows((prev) => (prev ?? []).filter((r) => !selected.has(r.key)));
+    toast.success(`${selected.size} item(s) borrado(s)`, {
+      description: 'Recuerda descargar el CSV para conservar los cambios.',
+    });
+    setConfirmingBulk(false);
+    setSelected(new Set());
+    setSelectionMode(false);
+  };
+
+  // See CollectionPage — the sticky .filters bar's height varies by
+  // collection/breakpoint, so the bulk bar's top offset is measured rather
+  // than hardcoded.
+  const FILTERS_STICKY_TOP = 68;
+  const BAR_GAP = 12;
+  const [filtersEl, setFiltersEl] = useState<HTMLDivElement | null>(null);
+  const [bulkBarTop, setBulkBarTop] = useState(FILTERS_STICKY_TOP + BAR_GAP);
+
+  useEffect(() => {
+    if (!filtersEl) return;
+    const update = () => setBulkBarTop(FILTERS_STICKY_TOP + filtersEl.offsetHeight + BAR_GAP);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(filtersEl);
+    return () => observer.disconnect();
+  }, [filtersEl]);
+
+  // Changing a filter/search clears the selection: otherwise "Borrar
+  // seleccionados" could delete items the user can no longer see.
+  useEffect(() => {
+    setSelected(new Set());
+  }, [filterValues, searchQuery]);
 
   async function handleFile(file: File) {
     setUploadErrors([]);
@@ -332,6 +382,21 @@ function CsvCollectionPageInner<Row>({
       <header className={styles.toolbar}>
         <h1>{displayName}</h1>
         <div className={styles.toolbarActions}>
+          <button
+            type="button"
+            className={selectionMode ? styles.selectModeOn : styles.secondary}
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+          >
+            {selectionMode ? (
+              <>
+                <X size={16} /> Salir de selección
+              </>
+            ) : (
+              <>
+                <ListChecks size={16} /> Seleccionar
+              </>
+            )}
+          </button>
           <button type="button" className={styles.secondary} onClick={handleDownload}>
             <Download size={16} /> Descargar CSV
           </button>
@@ -342,7 +407,7 @@ function CsvCollectionPageInner<Row>({
       </header>
 
       {(search || (filters && filters.length > 0)) && (
-        <div className={styles.filters}>
+        <div className={styles.filters} ref={setFiltersEl}>
           {search && (
             <label className={styles.searchLabel}>
               Buscar
@@ -399,17 +464,80 @@ function CsvCollectionPageInner<Row>({
           </button>
         </p>
       ) : (
-        visibleRows.map((entry) => (
-          <div key={entry.key}>
-            {renderCard({
-              item: entry.data,
-              onEdit: () => setEditingKey(entry.key),
-              onDuplicate: () => handleDuplicate(entry),
-              onDelete: () => setPendingDeleteKey(entry.key),
-            })}
-          </div>
-        ))
+        <>
+          {selectionMode && (
+            <div className={styles.bulkBar} style={{ top: bulkBarTop }}>
+              <span className={styles.bulkCount}>
+                {selected.size === 0
+                  ? 'Marca los items que quieras borrar'
+                  : `${selected.size} seleccionado${selected.size === 1 ? '' : 's'}`}
+              </span>
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => setSelected(new Set(visibleRows.map((r) => r.key)))}
+                disabled={visibleRows.every((r) => selected.has(r.key))}
+              >
+                Seleccionar los {visibleRows.length} visibles
+              </button>
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => setSelected(new Set())}
+                disabled={selected.size === 0}
+              >
+                Quitar selección
+              </button>
+              <button
+                type="button"
+                className={styles.bulkDelete}
+                onClick={() => setConfirmingBulk(true)}
+                disabled={selected.size === 0}
+              >
+                <Trash2 size={16} /> Borrar seleccionados
+              </button>
+              <button type="button" className={styles.secondary} onClick={exitSelectionMode}>
+                <X size={16} /> Salir
+              </button>
+            </div>
+          )}
+
+          {visibleRows.map((entry) => (
+            <div key={entry.key} className={styles.selectRow}>
+              <div
+                className={`${styles.selectBox} ${selectionMode ? styles.selectBoxActive : ''}`}
+                aria-hidden={!selectionMode}
+              >
+                <input
+                  type="checkbox"
+                  tabIndex={selectionMode ? 0 : -1}
+                  checked={selected.has(entry.key)}
+                  onChange={() => toggleSelected(entry.key)}
+                  aria-label={`Seleccionar item`}
+                />
+              </div>
+              <div className={styles.selectRowCard}>
+                {renderCard({
+                  item: entry.data,
+                  onEdit: () => setEditingKey(entry.key),
+                  onDuplicate: () => handleDuplicate(entry),
+                  onDelete: () => setPendingDeleteKey(entry.key),
+                })}
+              </div>
+            </div>
+          ))}
+        </>
       )}
+
+      <ConfirmDialog
+        open={confirmingBulk}
+        title={`Borrar ${selected.size} item(s)`}
+        message={`Se borrarán ${selected.size} item(s) de esta lista. No se puede deshacer — recuerda descargar el CSV para conservar los cambios.`}
+        confirmLabel={`Borrar ${selected.size}`}
+        destructive
+        onCancel={() => setConfirmingBulk(false)}
+        onConfirm={handleBulkDelete}
+      />
 
       <ConfirmDialog
         open={!!pendingDeleteKey}
