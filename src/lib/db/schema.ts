@@ -44,6 +44,14 @@ export const accounts = sqliteTable('accounts', {
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
   password: text('password'),
+  // OAuth fields required by Better Auth's schema even though this app only
+  // uses the credential (email/password) provider.
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
+  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
+  scope: text('scope'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
