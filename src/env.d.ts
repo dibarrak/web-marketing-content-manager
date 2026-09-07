@@ -21,6 +21,11 @@ interface Env {
    * extractor sends it so it can push promo snapshots without a user session.
    */
   BENEFITS_INGEST_SECRET: string;
+  /**
+   * TEMPORARY — break-glass secret for POST /api/emergency-reset. Remove
+   * along with that file and its middleware exemption after use.
+   */
+  EMERGENCY_RESET_SECRET: string;
 }
 
 declare namespace App {

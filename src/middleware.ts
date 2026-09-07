@@ -12,6 +12,9 @@ const PUBLIC_PREFIXES = [
   // Ingesta de promociones desde Apps Script: no hay sesión de usuario;
   // se protege con un secreto compartido validado dentro del endpoint.
   '/api/benefits/ingest',
+  // TEMPORARY break-glass password reset — remove this line along with
+  // src/pages/api/emergency-reset.ts once used.
+  '/api/emergency-reset',
   '/_astro',
 ];
 
