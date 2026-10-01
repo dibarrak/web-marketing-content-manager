@@ -1,23 +1,43 @@
 /**
- * POST /api/benefits/apply  body: { month: string, merchantIds: string[] }
+ * POST /api/benefits/apply
+ *   body: { month: string, merchantIds: string[], tiendaIds?: Record<merchantId, tiendaId> }
  *
  * Re-computes the diff server-side (never trusts client payloads) and applies
- * only the selected merchants. Items are written to the STAGED endpoint (not
- * published) so the change is reviewed in staging and shipped later via the
- * publish control. Admin & super-admin only.
+ * only the selected merchants:
+ *  - "changed": exists in both the sheet snapshot and the Benefits collection
+ *    → partial PATCH.
+ *  - "new": exists in the sheet and has a landing in Tiendas but no Benefits
+ *    item → create the item linked to the Tienda, then write the
+ *    back-reference on the Tienda. The client names the Tienda per merchant;
+ *    the server re-fetches it and verifies its merchant-id, draft state and
+ *    that it isn't already linked (so we never list all ~4.5k Tiendas per batch).
+ * Out-of-source / draft / no_landing / unchanged are never written. Items are written to the STAGED
+ * endpoint (not published) so the change is reviewed in staging and shipped
+ * later via the publish control. Admin & super-admin only.
+ *
+ * Updates run strictly one after another through `withRetry`, which waits out
+ * Webflow's 429 (Retry-After) instead of failing. The client sends the
+ * selection in small batches (see MAX_MERCHANTS_PER_REQUEST) so a single
+ * Worker invocation never has to make an unbounded number of subrequests.
  */
 import type { APIRoute } from 'astro';
 import { isAdmin } from '@lib/authz';
 import { BENEFITS_COLLECTION } from '@lib/config/sites';
 import { getWebflow } from '@lib/webflow';
+import { withRetry } from '@lib/merchant-sync/webflow';
+import { MERCHANT_SYNC } from '@lib/config/sites';
+import { toTiendaRef } from '@lib/benefits/items';
 import { getSnapshot } from '@lib/benefits/snapshots';
 import { fetchAllBenefitItems } from '@lib/benefits/items';
-import { computeDiff, type DiffEntry } from '@lib/benefits/sync';
+import { computeDiff, TIENDA_BENEFIT_REF, type DiffEntry, type TiendaRef } from '@lib/benefits/sync';
 import { logAudit } from '@lib/audit';
 import { WebflowApiError } from '@lib/webflow';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
 
 export const prerender = false;
+
+/** Cap per request; keeps Worker subrequests bounded. The UI batches below this. */
+export const MAX_MERCHANTS_PER_REQUEST = 50;
 
 interface ApplyResult {
   merchantId: string;
@@ -25,6 +45,13 @@ interface ApplyResult {
   action: 'create' | 'update';
   ok: boolean;
   error?: string;
+}
+
+function errMessage(err: unknown): string {
+  if (err instanceof WebflowApiError) {
+    return err.status === 429 ? 'Rate limit de Webflow; reintenta en un momento.' : err.message;
+  }
+  return err instanceof Error ? err.message : 'Error desconocido.';
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -35,12 +62,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const body = (await request.json().catch(() => null)) as {
     month?: string;
     merchantIds?: string[];
+    tiendaIds?: Record<string, string>;
   } | null;
   const month = body?.month?.trim();
   const merchantIds = Array.isArray(body?.merchantIds) ? body!.merchantIds : [];
   if (!month) return Response.json({ error: 'Falta month.' }, { status: 400 });
   if (merchantIds.length === 0)
     return Response.json({ error: 'No se seleccionaron merchants.' }, { status: 400 });
+
+  if (merchantIds.length > MAX_MERCHANTS_PER_REQUEST)
+    return Response.json(
+      { error: `Máximo ${MAX_MERCHANTS_PER_REQUEST} merchants por solicitud.` },
+      { status: 400 },
+    );
 
   const env = locals.runtime.env;
   const { collectionId, siteId } = BENEFITS_COLLECTION;
@@ -55,7 +89,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
     const existing = await fetchAllBenefitItems(env, collectionId);
-    const report = computeDiff(data, existing);
+
+    // Resolve only the Tiendas the client asked to link, straight from Webflow.
+    const wfRead = getWebflow(env);
+    const tiendas: TiendaRef[] = [];
+    for (const [merchantId, tiendaId] of Object.entries(body?.tiendaIds ?? {})) {
+      if (!merchantIds.includes(merchantId) || typeof tiendaId !== 'string') continue;
+      try {
+        const t = await withRetry(() =>
+          wfRead.collections.get(MERCHANT_SYNC.tiendasCollectionId, tiendaId),
+        );
+        const ref = toTiendaRef({ id: t.id, isDraft: t.isDraft, fieldData: t.fieldData });
+        if (ref && ref.merchantId === merchantId) tiendas.push(ref);
+      } catch {
+        // Unresolvable Tienda → the merchant falls out as "no_landing" and is skipped.
+      }
+    }
+    const report = computeDiff(data, existing, tiendas);
     entriesById = new Map(report.entries.map((e) => [e.merchantId, e]));
   } catch (err) {
     return webflowErrorResponse(err);
@@ -66,20 +116,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   for (const merchantId of merchantIds) {
     const entry = entriesById.get(merchantId);
-    // Only actionable statuses are applied. Drafts and unchanged are never
-    // touched, even if the client asked for them.
-    if (!entry || !['new', 'changed', 'out_of_source'].includes(entry.status)) continue;
+    // Only "changed" (in both sheet and CMS) and "new" (sheet + Tienda landing)
+    // are applied; everything else is never touched, even if the client asked.
+    if (!entry || (entry.status !== 'changed' && entry.status !== 'new')) continue;
     const action: 'create' | 'update' = entry.isCreate ? 'create' : 'update';
     try {
       let itemId = entry.itemId;
+      let linkError: string | undefined;
       if (entry.isCreate) {
-        const created = await wf.collections.create(
-          collectionId,
-          entry.fieldData as { name: string; slug: string },
+        const created = await withRetry(() =>
+          wf.collections.create(collectionId, entry.fieldData as { name: string; slug: string }),
         );
         itemId = created.id;
+        // Back-reference on the Tienda so the landing points at its new item.
+        try {
+          await withRetry(() =>
+            wf.collections.update(MERCHANT_SYNC.tiendasCollectionId, entry.tiendaId!, {
+              [TIENDA_BENEFIT_REF]: created.id,
+            }),
+          );
+          await logAudit(env, {
+            userId: user.id,
+            userEmail: user.email,
+            action: 'update',
+            siteId,
+            collectionId: MERCHANT_SYNC.tiendasCollectionId,
+            itemId: entry.tiendaId,
+            itemSlug: entry.merchantId,
+            diff: { source: 'benefits-sync', month, link: { [TIENDA_BENEFIT_REF]: created.id } },
+          });
+        } catch (err) {
+          linkError = errMessage(err);
+        }
       } else {
-        await wf.collections.update(collectionId, entry.itemId!, entry.fieldData);
+        const id = entry.itemId!;
+        await withRetry(() => wf.collections.update(collectionId, id, entry.fieldData));
       }
       await logAudit(env, {
         userId: user.id,
@@ -91,17 +162,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
         itemSlug: entry.merchantId,
         diff: { source: 'benefits-sync', month, status: entry.status, changes: entry.changes },
       });
-      results.push({ merchantId, name: entry.name, action, ok: true });
+      results.push(
+        linkError
+          ? {
+              merchantId,
+              name: entry.name,
+              action,
+              ok: false,
+              error: `Item creado, pero no se pudo vincular en Tiendas: ${linkError}`,
+            }
+          : { merchantId, name: entry.name, action, ok: true },
+      );
     } catch (err) {
-      const message =
-        err instanceof WebflowApiError
-          ? err.status === 429
-            ? 'Rate limit de Webflow; reintenta en un momento.'
-            : err.message
-          : err instanceof Error
-            ? err.message
-            : 'Error desconocido.';
-      results.push({ merchantId, name: entry.name, action, ok: false, error: message });
+      results.push({ merchantId, name: entry.name, action, ok: false, error: errMessage(err) });
     }
   }
 

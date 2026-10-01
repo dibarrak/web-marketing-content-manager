@@ -7,7 +7,7 @@ import type { APIRoute } from 'astro';
 import { isAdmin } from '@lib/authz';
 import { BENEFITS_COLLECTION } from '@lib/config/sites';
 import { getSnapshot } from '@lib/benefits/snapshots';
-import { fetchAllBenefitItems } from '@lib/benefits/items';
+import { fetchAllBenefitItems, fetchTiendaRefs } from '@lib/benefits/items';
 import { computeDiff } from '@lib/benefits/sync';
 import { webflowErrorResponse } from '@lib/webflow/error-response';
 
@@ -31,7 +31,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
       );
     }
     const existing = await fetchAllBenefitItems(env, BENEFITS_COLLECTION.collectionId);
-    const report = computeDiff(data, existing);
+    const tiendas = await fetchTiendaRefs(env);
+    const report = computeDiff(data, existing, tiendas);
     return Response.json(report);
   } catch (err) {
     return webflowErrorResponse(err);

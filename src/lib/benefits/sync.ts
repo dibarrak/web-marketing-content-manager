@@ -14,6 +14,11 @@
  *    "soft off": switch → false, value fields left untouched.
  *  - Out-of-source merchants (in Webflow, absent from the month) get both
  *    switches turned off.
+ *  - A merchant in the source with no Benefits item is only "new" when it has a
+ *    landing in the Tiendas collection (matched by merchant-id). The created
+ *    item copies the Tienda's name/slug and links to it; the caller then writes
+ *    the back-reference on the Tienda. Without a landing → "no_landing", never
+ *    created.
  */
 
 /** Webflow field slugs owned by the sync. */
@@ -31,7 +36,23 @@ export const F = {
   cashbackInicio: 'fecha-inicio-descuento',
   cashbackFin: 'fecha-fin-descuento',
   cashbackSwitch: 'mostrar-descuento',
+  // reference to the Tiendas landing
+  landingRef: 'referencia-landing-2',
 } as const;
+
+/** Field on the Tiendas item that points back to its Benefits item. */
+export const TIENDA_BENEFIT_REF = 'cupon-referenciado-unico';
+
+/** A Tiendas landing, the subset the sync needs to link a Benefits item. */
+export interface TiendaRef {
+  id: string;
+  merchantId: string;
+  name: string;
+  slug: string;
+  isDraft?: boolean;
+  /** Benefits item id already stored in the Tienda's back-reference, if any. */
+  linkedBenefitId?: string;
+}
 
 // ---- Web App response shapes ----
 
@@ -80,7 +101,13 @@ export interface ExistingItem {
 
 // ---- Diff output ----
 
-export type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source' | 'draft';
+export type ChangeStatus =
+  | 'new'
+  | 'changed'
+  | 'unchanged'
+  | 'out_of_source'
+  | 'draft'
+  | 'no_landing';
 
 export interface FieldChange {
   field: string;
@@ -95,6 +122,8 @@ export interface DiffEntry {
   status: ChangeStatus;
   /** Existing Webflow item id (present for changed / unchanged / out_of_source). */
   itemId?: string;
+  /** Tiendas landing to link (present for new). */
+  tiendaId?: string;
   isCreate: boolean;
   changes: FieldChange[];
   /** Payload to send: full fieldData for create, partial for update. */
@@ -239,27 +268,62 @@ function equals(desired: string | boolean, current: unknown): boolean {
     : normalize(current) === normalize(desired);
 }
 
-function diffMerchant(m: MergedMerchant, item: ExistingItem | undefined): DiffEntry {
+function diffMerchant(
+  m: MergedMerchant,
+  item: ExistingItem | undefined,
+  tienda: TiendaRef | undefined,
+  takenSlugs: Set<string>,
+): DiffEntry {
   const desired = desiredFields(m);
-  const warnings = m.warnings.length ? m.warnings : undefined;
+  const warnings = m.warnings.length ? [...m.warnings] : [];
   const summary = { cupon: m.cupon?.valor, cashback: m.cashback?.valor };
 
   if (!item) {
-    // New item: full fieldData (merchant-id + slug + owned fields).
-    const fieldData: Record<string, unknown> = {
-      [F.merchantId]: m.merchantId,
-      slug: m.merchantId,
-    };
-    for (const d of desired) fieldData[d.field] = d.value;
-    return {
+    const skip = (reason: string, status: ChangeStatus): DiffEntry => ({
       merchantId: m.merchantId,
       name: m.name,
+      status,
+      isCreate: false,
+      changes: [],
+      fieldData: {},
+      summary,
+      warnings: [...warnings, reason],
+    });
+    if (!tienda) return skip('Sin landing en Tiendas: no se puede crear el item.', 'no_landing');
+    if (tienda.isDraft) return skip('La landing en Tiendas está en DRAFT.', 'draft');
+    if (tienda.linkedBenefitId)
+      return skip('La landing ya está vinculada a otro item de Benefits.', 'no_landing');
+
+    // Same convention as the existing items: name + slug mirror the Tienda.
+    const name = tienda.name || m.name;
+    let slug = tienda.slug || m.merchantId;
+    if (takenSlugs.has(slug)) slug = `${slug}-${m.merchantId}`;
+    takenSlugs.add(slug);
+
+    const fieldData: Record<string, unknown> = {
+      [F.merchantId]: m.merchantId,
+      slug,
+      [F.landingRef]: tienda.id,
+    };
+    for (const d of desired) fieldData[d.field] = d.field === F.name ? name : d.value;
+    return {
+      merchantId: m.merchantId,
+      name,
       status: 'new',
       isCreate: true,
-      changes: desired.map((d) => ({ field: d.field, label: d.label, before: undefined, after: d.value })),
+      tiendaId: tienda.id,
+      changes: [
+        { field: F.landingRef, label: 'Landing (Tienda)', before: undefined, after: tienda.name || tienda.slug },
+        ...desired.map((d) => ({
+          field: d.field,
+          label: d.label,
+          before: undefined,
+          after: d.field === F.name ? name : d.value,
+        })),
+      ],
       fieldData,
       summary,
-      warnings,
+      warnings: warnings.length ? warnings : undefined,
     };
   }
 
@@ -287,7 +351,7 @@ function diffMerchant(m: MergedMerchant, item: ExistingItem | undefined): DiffEn
     changes,
     fieldData: patch,
     summary,
-    warnings,
+    warnings: warnings.length ? warnings : undefined,
   };
 }
 
@@ -317,7 +381,11 @@ function diffOutOfSource(item: ExistingItem): DiffEntry | null {
 }
 
 /** Build the full diff report between source data and existing Webflow items. */
-export function computeDiff(data: WebAppResponse, existing: ExistingItem[]): DiffReport {
+export function computeDiff(
+  data: WebAppResponse,
+  existing: ExistingItem[],
+  tiendas: TiendaRef[] = [],
+): DiffReport {
   const merged = mergeSource(data);
 
   const byMerchant = new Map<string, ExistingItem>();
@@ -326,12 +394,20 @@ export function computeDiff(data: WebAppResponse, existing: ExistingItem[]): Dif
     if (id && !byMerchant.has(id)) byMerchant.set(id, it);
   }
 
+  // Prefer a published landing when a merchant-id has several Tiendas.
+  const tiendaByMerchant = new Map<string, TiendaRef>();
+  for (const t of tiendas) {
+    const cur = tiendaByMerchant.get(t.merchantId);
+    if (!cur || (cur.isDraft && !t.isDraft)) tiendaByMerchant.set(t.merchantId, t);
+  }
+  const takenSlugs = new Set(existing.map((it) => normalize(it.fieldData.slug)).filter(Boolean));
+
   const sourceIds = new Set(merged.map((m) => m.merchantId));
   const entries: DiffEntry[] = [];
 
   for (const m of merged) {
     const item = byMerchant.get(m.merchantId);
-    const entry = diffMerchant(m, item);
+    const entry = diffMerchant(m, item, tiendaByMerchant.get(m.merchantId), takenSlugs);
     if (item?.isDraft) {
       // DRAFT convention: the landing exists but isn't public. Never modify it;
       // show it as informational only (its changes are visible but not applied).
@@ -355,6 +431,7 @@ export function computeDiff(data: WebAppResponse, existing: ExistingItem[]): Dif
     unchanged: 0,
     out_of_source: 0,
     draft: 0,
+    no_landing: 0,
   };
   for (const e of entries) counts[e.status]++;
 

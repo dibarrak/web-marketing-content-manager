@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDiff, mergeSource, F, type ExistingItem, type WebAppResponse } from './sync';
+import { computeDiff, mergeSource, F, type ExistingItem, type TiendaRef, type WebAppResponse } from './sync';
 
 const item = (id: string, fields: Record<string, unknown>): ExistingItem => ({
   id,
@@ -41,6 +41,14 @@ describe('mergeSource', () => {
   });
 });
 
+const tienda = (merchantId: string, extra: Partial<TiendaRef> = {}): TiendaRef => ({
+  id: `t${merchantId}`,
+  merchantId,
+  name: `Tienda ${merchantId}`,
+  slug: `tienda-${merchantId}`,
+  ...extra,
+});
+
 describe('computeDiff', () => {
   it('classifies a brand-new merchant as new with full payload', () => {
     const data: WebAppResponse = {
@@ -48,15 +56,41 @@ describe('computeDiff', () => {
       month: 'Julio 2026',
       cupon: [{ merchantId: '9', name: 'Nuevo', nombreCupon: 'N10', valor: '10%', fechaInicio: '01/07/2026', fechaFin: '31/07/2026' }],
     };
-    const report = computeDiff(data, []);
+    const report = computeDiff(data, [], [tienda('9')]);
     expect(report.counts.new).toBe(1);
     const e = report.entries[0];
     expect(e.isCreate).toBe(true);
+    expect(e.tiendaId).toBe('t9');
     expect(e.fieldData[F.merchantId]).toBe('9');
-    expect(e.fieldData.slug).toBe('9');
+    expect(e.fieldData.slug).toBe('tienda-9');
+    expect(e.fieldData.name).toBe('Tienda 9');
+    expect(e.fieldData[F.landingRef]).toBe('t9');
     expect(e.fieldData[F.cuponSwitch]).toBe(true);
     // cashback absent → soft off in the create payload
     expect(e.fieldData[F.cashbackSwitch]).toBe(false);
+  });
+
+  const newMerchant: WebAppResponse = {
+    ok: true,
+    cupon: [{ merchantId: '9', name: 'Nuevo', nombreCupon: 'N10', valor: '10%', fechaInicio: 'x', fechaFin: 'y' }],
+  };
+
+  it('does not create a merchant that has no Tienda landing', () => {
+    const report = computeDiff(newMerchant, [], []);
+    expect(report.counts.no_landing).toBe(1);
+    expect(report.entries[0].isCreate).toBe(false);
+    expect(report.entries[0].fieldData).toEqual({});
+  });
+
+  it('does not create when the Tienda is draft or already linked', () => {
+    expect(computeDiff(newMerchant, [], [tienda('9', { isDraft: true })]).counts.draft).toBe(1);
+    expect(computeDiff(newMerchant, [], [tienda('9', { linkedBenefitId: 'b1' })]).counts.no_landing).toBe(1);
+  });
+
+  it('avoids slug collisions with existing Benefits items', () => {
+    const existing = [item('1', { slug: 'tienda-9' })];
+    const e = computeDiff(newMerchant, existing, [tienda('9')]).entries.find((x) => x.merchantId === '9')!;
+    expect(e.fieldData.slug).toBe('tienda-9-9');
   });
 
   it('detects a changed date and emits only the differing fields in the patch', () => {

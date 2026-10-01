@@ -8,7 +8,7 @@ import ConfirmDialog from './ConfirmDialog';
 import PublishControls from './PublishControls';
 import styles from './benefitsSync.module.scss';
 
-type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source' | 'draft';
+type ChangeStatus = 'new' | 'changed' | 'unchanged' | 'out_of_source' | 'draft' | 'no_landing';
 
 interface FieldChange {
   field: string;
@@ -22,6 +22,7 @@ interface DiffEntry {
   name: string;
   status: ChangeStatus;
   itemId?: string;
+  tiendaId?: string;
   isCreate: boolean;
   changes: FieldChange[];
   summary?: { cupon?: string; cashback?: string };
@@ -40,17 +41,22 @@ const STATUS_LABEL: Record<ChangeStatus, string> = {
   unchanged: 'Sin cambios',
   out_of_source: 'Fuera de fuente',
   draft: 'Draft (omitido)',
+  no_landing: 'Sin landing',
 };
 
-// Statuses the user can select and apply.
-const ACTIONABLE: ChangeStatus[] = ['new', 'changed', 'out_of_source'];
-// Selected by default. "new" is excluded on purpose: a merchant absent from the
-// collection usually means its landing page doesn't exist yet.
-const DEFAULT_SELECTED: ChangeStatus[] = ['changed', 'out_of_source'];
+// Applicable: merchants in both the sheet and the CMS with differences
+// ("changed"), and sheet merchants that have a Tiendas landing but no Benefits
+// item yet ("new" → created and linked). Out-of-source / draft / no_landing are
+// informational.
+const ACTIONABLE: ChangeStatus[] = ['new', 'changed'];
+const DEFAULT_SELECTED: ChangeStatus[] = ['new', 'changed'];
+// Merchants per request; batches are sent one after another to stay under
+// Webflow's rate limit and the Worker subrequest cap.
+const APPLY_BATCH_SIZE = 25;
 // All statuses, in the order shown as filter chips.
-const ALL_STATUSES: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft', 'unchanged'];
+const ALL_STATUSES: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'no_landing', 'draft', 'unchanged'];
 // Statuses visible by default (everything except the noisy "unchanged").
-const DEFAULT_VISIBLE: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'draft'];
+const DEFAULT_VISIBLE: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'no_landing', 'draft'];
 
 function fmt(v: unknown): string {
   if (v === true) return 'Sí';
@@ -98,8 +104,6 @@ export default function BenefitsSync({ siteId }: Props) {
     try {
       const res = await api.get<DiffReport>('/benefits/preview', { params: { month } });
       setReport(res.data);
-      // Pre-select changed + out-of-source. New merchants stay unchecked
-      // (likely no landing page yet).
       setSelected(
         new Set(
           res.data.entries.filter((e) => DEFAULT_SELECTED.includes(e.status)).map((e) => e.merchantId),
@@ -126,21 +130,44 @@ export default function BenefitsSync({ siteId }: Props) {
     () => displayEntries.filter((e) => ACTIONABLE.includes(e.status)),
     [displayEntries],
   );
-  const selectedNewCount = useMemo(
-    () => actionableEntries.filter((e) => e.status === 'new' && selected.has(e.merchantId)).length,
-    [actionableEntries, selected],
-  );
+
+  const tiendaByMerchant = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const e of report?.entries ?? []) if (e.status === 'new' && e.tiendaId) map.set(e.merchantId, e.tiendaId);
+    return map;
+  }, [report]);
 
   const apply = async () => {
     const merchantIds = [...selected];
     setApplying(true);
-    const toastId = toast.loading(`Aplicando ${merchantIds.length} cambios…`);
+    const toastId = toast.loading(`Aplicando 0/${merchantIds.length}…`);
+    let applied = 0;
+    let failed = 0;
     try {
-      const res = await api.post<{ applied: number; failed: number }>('/benefits/apply', {
-        month,
-        merchantIds,
-      });
-      const { applied, failed } = res.data;
+      // Sequential batches: each request finishes before the next starts.
+      for (let i = 0; i < merchantIds.length; i += APPLY_BATCH_SIZE) {
+        const batch = merchantIds.slice(i, i + APPLY_BATCH_SIZE);
+        try {
+          // For new merchants the server needs the Tienda to link; it re-verifies it.
+          const tiendaIds: Record<string, string> = {};
+          for (const id of batch) {
+            const t = tiendaByMerchant.get(id);
+            if (t) tiendaIds[id] = t;
+          }
+          const res = await api.post<{ applied: number; failed: number }>('/benefits/apply', {
+            month,
+            merchantIds: batch,
+            tiendaIds,
+          });
+          applied += res.data.applied;
+          failed += res.data.failed;
+        } catch {
+          failed += batch.length;
+        }
+        toast.loading(`Aplicando ${Math.min(i + APPLY_BATCH_SIZE, merchantIds.length)}/${merchantIds.length}…`, {
+          id: toastId,
+        });
+      }
       if (failed > 0) {
         toast.warning(`${applied} aplicados, ${failed} con error`, {
           id: toastId,
@@ -257,14 +284,6 @@ export default function BenefitsSync({ siteId }: Props) {
             </div>
           </div>
 
-          {selectedNewCount > 0 && (
-            <div className={styles.warnBanner}>
-              ⚠ Seleccionaste {selectedNewCount} merchant(s) <strong>nuevos</strong>. Un merchant que
-              no existe en la colección normalmente <strong>aún no tiene su landing page generada</strong>;
-              al aplicarlo se creará el item de todas formas. Confirma que su landing exista antes de publicar.
-            </div>
-          )}
-
           {displayEntries.length === 0 ? (
             <p className={styles.empty}>No hay cambios por aplicar para este mes. 🎉</p>
           ) : (
@@ -292,7 +311,7 @@ export default function BenefitsSync({ siteId }: Props) {
                             type="checkbox"
                             checked={selected.has(e.merchantId)}
                             disabled={!selectable}
-                            title={selectable ? undefined : 'Item en DRAFT: no se modifica'}
+                            title={selectable ? undefined : 'Solo informativo: no se modifica'}
                             onChange={() => selectable && toggle(e.merchantId)}
                           />
                         </td>
