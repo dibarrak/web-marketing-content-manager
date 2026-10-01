@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   adBannerSchema,
+  hasDuplicateAdBannerId,
   SEGMENT_LABELS,
   USER_SEGMENTS,
   type AdBannerFields,
@@ -19,6 +20,8 @@ interface Props {
   onCancel?: () => void;
   submitting?: boolean;
   isEditing?: boolean;
+  /** ids of every other row, for the non-blocking duplicate warning. */
+  existingIds?: number[];
 }
 
 const EMPTY: AdBannerFields = {
@@ -37,6 +40,7 @@ export default function AdBannerForm({
   onCancel,
   submitting,
   isEditing,
+  existingIds = [],
 }: Props) {
   const {
     register,
@@ -52,6 +56,7 @@ export default function AdBannerForm({
   });
 
   const imageUrl = watch('image_url');
+  const idDuplicate = hasDuplicateAdBannerId(watch('id'), existingIds);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -71,6 +76,12 @@ export default function AdBannerForm({
               : 'Sugerido automáticamente al siguiente consecutivo; puedes cambiarlo — los duplicados son válidos en este archivo.'
           }
         />
+        {idDuplicate && (
+          <small className={fieldStyles.warning}>
+            Ya existe otro registro con este ID — revisa si es intencional (ej. misma campaña en varias
+            ventanas de fechas).
+          </small>
+        )}
       </fieldset>
 
       <fieldset className={styles.fieldset}>

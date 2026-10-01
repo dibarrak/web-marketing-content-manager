@@ -105,6 +105,12 @@ export const offerwallBannerSchema = z
 
 export type OfferwallBannerFields = z.infer<typeof offerwallBannerSchema>;
 
+/** Non-blocking hint — a duplicate banner_id is often valid, so this only warns. */
+export function hasDuplicateBannerId(bannerId: string, otherBannerIds: readonly string[]): boolean {
+  const trimmed = bannerId.trim();
+  return trimmed !== '' && otherBannerIds.some((id) => id.trim() === trimmed);
+}
+
 function splitList(raw: string): string[] {
   return raw
     .split(',')

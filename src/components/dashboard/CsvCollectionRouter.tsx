@@ -121,8 +121,9 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         getCreateDefaults={(rows) => ({ id: nextAdBannerId(rows) })}
         filters={AD_BANNER_FILTERS}
         search={searchAdBanner}
-        renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
+        renderForm={({ defaultValues, onSubmit, onCancel, isEditing, allRows }) => (
           <AdBannerForm
+            existingIds={allRows.map((r) => r.id)}
             defaultValues={defaultValues}
             onSubmit={onSubmit}
             onCancel={onCancel}
@@ -148,8 +149,9 @@ export default function CsvCollectionRouter({ csvKey, displayName, singularName 
         getCreateDefaults={() => ({})}
         filters={OFFERWALL_FILTERS}
         search={searchOfferwallBanner}
-        renderForm={({ defaultValues, onSubmit, onCancel, isEditing }) => (
+        renderForm={({ defaultValues, onSubmit, onCancel, isEditing, allRows }) => (
           <OfferwallBannerForm
+            existingBannerIds={allRows.map((r) => r.banner_id)}
             defaultValues={defaultValues}
             onSubmit={onSubmit}
             onCancel={onCancel}

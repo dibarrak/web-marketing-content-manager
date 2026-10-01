@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  hasDuplicateBannerId,
   MAX_OFFERWALL_MERCHANTS,
   OFFERWALL_ACTION_LABELS,
   OFFERWALL_ACTIONS,
@@ -27,6 +28,8 @@ interface Props {
   onCancel?: () => void;
   submitting?: boolean;
   isEditing?: boolean;
+  /** banner_ids of every other row, for the non-blocking duplicate warning. */
+  existingBannerIds?: string[];
 }
 
 const EMPTY: OfferwallBannerFields = {
@@ -54,6 +57,7 @@ export default function OfferwallBannerForm({
   onCancel,
   submitting,
   isEditing,
+  existingBannerIds = [],
 }: Props) {
   const {
     register,
@@ -71,6 +75,7 @@ export default function OfferwallBannerForm({
 
   const backgroundImage = watch('background_image');
   const action = watch('action');
+  const bannerIdDuplicate = hasDuplicateBannerId(watch('banner_id'), existingBannerIds);
 
   // react-hook-form keeps a hidden field's last value in state even after it
   // unmounts (e.g. switching away from "redirect-to-url" hides the URL
@@ -106,6 +111,11 @@ export default function OfferwallBannerForm({
             isEditing ? undefined : 'Los duplicados son válidos en este archivo — no es necesario que sea único.'
           }
         />
+        {bannerIdDuplicate && (
+          <small className={fieldStyles.warning}>
+            Ya existe otro registro con este Banner ID — revisa si es intencional.
+          </small>
+        )}
       </fieldset>
 
       <fieldset className={styles.fieldset}>

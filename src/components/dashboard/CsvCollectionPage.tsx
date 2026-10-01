@@ -1,6 +1,24 @@
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  sortableKeyboardCoordinates,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { withBase } from '@lib/base-path';
 import { downloadCsv, parseCsvFile, unparseCsv, validateHeaders } from '@lib/csv';
-import { ArrowLeft, CirclePlus, Download, ListChecks, Trash2, X } from 'lucide-react';
+import { ArrowLeft, CirclePlus, Download, GripVertical, ListChecks, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Toaster, toast } from 'sonner';
 import type { ZodType } from 'zod';
@@ -16,6 +34,44 @@ interface RowEntry<Row> {
    *  as the key. */
   key: string;
   data: Row;
+}
+
+function SortableRow({
+  id,
+  showHandle,
+  canReorder,
+  children,
+}: {
+  id: string;
+  showHandle: boolean;
+  canReorder: boolean;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id, disabled: !canReorder });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${styles.selectRow} ${isDragging ? styles.rowDragging : ''}`}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+    >
+      {showHandle && (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          className={`${styles.dragHandle} ${canReorder ? '' : styles.dragHandleDisabled}`}
+          disabled={!canReorder}
+          aria-label="Reordenar (arrastra, o con teclado: Espacio y flechas)"
+          title={canReorder ? 'Arrastra para reordenar' : 'Quita filtros para reordenar'}
+          {...(canReorder ? attributes : {})}
+          {...(canReorder ? listeners : {})}
+        >
+          <GripVertical size={18} />
+        </button>
+      )}
+      {children}
+    </div>
+  );
 }
 
 function newKey(): string {
@@ -113,12 +169,30 @@ function CsvCollectionPageInner<Row>({
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  /** Set when creating via "duplicar" so the copy lands right below its source. */
+  const [insertAfterKey, setInsertAfterKey] = useState<string | null>(null);
   const [createDefaults, setCreateDefaults] = useState<Partial<Row> | undefined>(undefined);
   const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmingBulk, setConfirmingBulk] = useState(false);
   /** Checkboxes stay hidden until the user opts into selection mode. */
   const [selectionMode, setSelectionMode] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) return;
+    setRows((prev) => {
+      const list = prev ?? [];
+      const from = list.findIndex((r) => r.key === active.id);
+      const to = list.findIndex((r) => r.key === over.id);
+      return from < 0 || to < 0 ? prev : arrayMove(list, from, to);
+    });
+  };
 
   const toggleSelected = (key: string) =>
     setSelected((prev) => {
@@ -232,6 +306,7 @@ function CsvCollectionPageInner<Row>({
     setCreating(false);
     setEditingKey(null);
     setCreateDefaults(undefined);
+    setInsertAfterKey(null);
   };
 
   const editingEntry = rows?.find((r) => r.key === editingKey);
@@ -252,17 +327,26 @@ function CsvCollectionPageInner<Row>({
         (prev ?? []).map((r) => (r.key === editingEntry.key ? { ...r, data: row } : r)),
       );
     } else {
-      setRows((prev) => [...(prev ?? []), { key: newKey(), data: row }]);
+      const entry = { key: newKey(), data: row };
+      setRows((prev) => {
+        const list = [...(prev ?? [])];
+        const at = insertAfterKey ? list.findIndex((r) => r.key === insertAfterKey) : -1;
+        if (at < 0) list.push(entry);
+        else list.splice(at + 1, 0, entry);
+        return list;
+      });
     }
     closeForm();
   };
 
   const openCreate = () => {
+    setInsertAfterKey(null);
     setCreateDefaults(getCreateDefaults((rows ?? []).map((r) => r.data)));
     setCreating(true);
   };
 
   const handleDuplicate = (entry: RowEntry<Row>) => {
+    setInsertAfterKey(entry.key);
     setCreateDefaults({ ...entry.data, ...getCreateDefaults((rows ?? []).map((r) => r.data)) });
     setCreating(true);
   };
@@ -319,6 +403,10 @@ function CsvCollectionPageInner<Row>({
       return !selected || f.matches(entry.data, selected);
     });
   });
+
+  // Reordering rewrites the order of the full list, so it is only offered when
+  // the visible list is the whole list and no bulk-selection is in progress.
+  const canReorder = !hasActiveFilters && !selectionMode && rows !== null && rows.length > 1;
 
   if (rows === null) {
     return (
@@ -502,30 +590,42 @@ function CsvCollectionPageInner<Row>({
             </div>
           )}
 
-          {visibleRows.map((entry) => (
-            <div key={entry.key} className={styles.selectRow}>
-              <div
-                className={`${styles.selectBox} ${selectionMode ? styles.selectBoxActive : ''}`}
-                aria-hidden={!selectionMode}
-              >
-                <input
-                  type="checkbox"
-                  tabIndex={selectionMode ? 0 : -1}
-                  checked={selected.has(entry.key)}
-                  onChange={() => toggleSelected(entry.key)}
-                  aria-label={`Seleccionar item`}
-                />
-              </div>
-              <div className={styles.selectRowCard}>
-                {renderCard({
-                  item: entry.data,
-                  onEdit: () => setEditingKey(entry.key),
-                  onDuplicate: () => handleDuplicate(entry),
-                  onDelete: () => setPendingDeleteKey(entry.key),
-                })}
-              </div>
-            </div>
-          ))}
+          {rows.length > 1 && (
+            <p className={styles.filterCount}>
+              {canReorder
+                ? 'Arrastra el ícono ⋮⋮ para cambiar el orden — el CSV se descarga en este orden.'
+                : 'Para reordenar, quita los filtros/búsqueda y sal del modo selección.'}
+            </p>
+          )}
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={visibleRows.map((r) => r.key)} strategy={verticalListSortingStrategy}>
+              {visibleRows.map((entry) => (
+                <SortableRow key={entry.key} id={entry.key} showHandle={rows.length > 1} canReorder={canReorder}>
+                  <div
+                    className={`${styles.selectBox} ${selectionMode ? styles.selectBoxActive : ''}`}
+                    aria-hidden={!selectionMode}
+                  >
+                    <input
+                      type="checkbox"
+                      tabIndex={selectionMode ? 0 : -1}
+                      checked={selected.has(entry.key)}
+                      onChange={() => toggleSelected(entry.key)}
+                      aria-label={`Seleccionar item`}
+                    />
+                  </div>
+                  <div className={styles.selectRowCard}>
+                    {renderCard({
+                      item: entry.data,
+                      onEdit: () => setEditingKey(entry.key),
+                      onDuplicate: () => handleDuplicate(entry),
+                      onDelete: () => setPendingDeleteKey(entry.key),
+                    })}
+                  </div>
+                </SortableRow>
+              ))}
+            </SortableContext>
+          </DndContext>
         </>
       )}
 

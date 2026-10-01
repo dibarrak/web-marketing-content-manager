@@ -90,6 +90,11 @@ export function nextAdBannerId(rows: AdBannerFields[]): number {
   return Math.max(...rows.map((r) => r.id)) + 1;
 }
 
+/** Non-blocking hint — a duplicate id is often valid (same campaign split across date windows). */
+export function hasDuplicateAdBannerId(id: number, otherIds: readonly number[]): boolean {
+  return Number.isFinite(id) && otherIds.includes(id);
+}
+
 /** Whether `now` falls within the banner's vigencia window. */
 export function isAdBannerActive(item: AdBannerFields, now: Date = new Date()): boolean {
   return new Date(item.start_date) <= now && now <= new Date(item.end_date);
