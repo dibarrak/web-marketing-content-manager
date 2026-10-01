@@ -1,0 +1,54 @@
+/**
+ * GET /api/benefits/tiendas?offset=0
+ * One slice of the Tiendas collection (a few Webflow pages) as TiendaRef[].
+ * The collection has thousands of items, so listing it in a single request
+ * blows through the gateway timeout; the UI walks it slice by slice following
+ * `next` and hands the result to the preview. Admin & super-admin only.
+ */
+import type { APIRoute } from 'astro';
+import { isAdmin } from '@lib/authz';
+import { MERCHANT_SYNC } from '@lib/config/sites';
+import { getWebflow } from '@lib/webflow';
+import { toTiendaRef } from '@lib/benefits/items';
+import { withRetry } from '@lib/merchant-sync/webflow';
+import type { TiendaRef } from '@lib/benefits/sync';
+import { webflowErrorResponse } from '@lib/webflow/error-response';
+
+export const prerender = false;
+
+const PAGE_SIZE = 100;
+const PAGES_PER_REQUEST = 5;
+
+export const GET: APIRoute = async ({ url, locals }) => {
+  const user = locals.user;
+  if (!user) return new Response('Unauthorized', { status: 401 });
+  if (!isAdmin(user)) return new Response('Forbidden', { status: 403 });
+
+  let offset = Math.max(0, Number(url.searchParams.get('offset')) || 0);
+  const wf = getWebflow(locals.runtime.env);
+  const tiendas: TiendaRef[] = [];
+  let total = 0;
+  let next: number | null = null;
+
+  try {
+    for (let p = 0; p < PAGES_PER_REQUEST; p++) {
+      const page = await withRetry(() =>
+        wf.collections.list(MERCHANT_SYNC.tiendasCollectionId, { limit: PAGE_SIZE, offset }),
+      );
+      const items = page.items ?? [];
+      total = page.pagination?.total ?? total;
+      for (const it of items) {
+        const ref = toTiendaRef({ id: it.id, isDraft: it.isDraft, fieldData: it.fieldData });
+        if (ref) tiendas.push(ref);
+      }
+      offset += PAGE_SIZE;
+      if (items.length < PAGE_SIZE || offset >= total) break;
+      next = offset;
+    }
+    // `next` only survives if the loop used every page and more remain.
+    if (next !== null && next >= total) next = null;
+    return Response.json({ tiendas, next, total });
+  } catch (err) {
+    return webflowErrorResponse(err);
+  }
+};

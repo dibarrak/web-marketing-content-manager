@@ -1,7 +1,7 @@
 import { api } from '@lib/api-client';
 import { AxiosError } from 'axios';
 import { ArrowLeft, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import ConfirmDialog from './ConfirmDialog';
@@ -29,6 +29,15 @@ interface DiffEntry {
   warnings?: string[];
 }
 
+interface TiendaRef {
+  id: string;
+  merchantId: string;
+  name: string;
+  slug: string;
+  isDraft?: boolean;
+  linkedBenefitId?: string;
+}
+
 interface DiffReport {
   month: string;
   entries: DiffEntry[];
@@ -52,7 +61,7 @@ const ACTIONABLE: ChangeStatus[] = ['new', 'changed'];
 const DEFAULT_SELECTED: ChangeStatus[] = ['new', 'changed'];
 // Merchants per request; batches are sent one after another to stay under
 // Webflow's rate limit and the Worker subrequest cap.
-const APPLY_BATCH_SIZE = 25;
+const APPLY_BATCH_SIZE = 10;
 // All statuses, in the order shown as filter chips.
 const ALL_STATUSES: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'no_landing', 'draft', 'unchanged'];
 // Statuses visible by default (everything except the noisy "unchanged").
@@ -75,6 +84,9 @@ export default function BenefitsSync({ siteId }: Props) {
   const [monthsError, setMonthsError] = useState<string | null>(null);
   const [report, setReport] = useState<DiffReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingLabel, setLoadingLabel] = useState('Cargando…');
+  // Tiendas index, loaded once per page visit (thousands of items, slow to list).
+  const tiendasRef = useRef<TiendaRef[] | null>(null);
   const [applying, setApplying] = useState(false);
   const [confirmApply, setConfirmApply] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -100,9 +112,28 @@ export default function BenefitsSync({ siteId }: Props) {
   const preview = async () => {
     if (!month) return;
     setLoading(true);
+    setLoadingLabel('Cargando…');
     setReport(null);
     try {
-      const res = await api.get<DiffReport>('/benefits/preview', { params: { month } });
+      if (!tiendasRef.current) {
+        // Walk the Tiendas collection in slices so no single request times out.
+        const collected: TiendaRef[] = [];
+        let next: number | null = 0;
+        while (next !== null) {
+          const slice: { data: { tiendas: TiendaRef[]; next: number | null; total: number } } =
+            await api.get('/benefits/tiendas', { params: { offset: next } });
+          collected.push(...slice.data.tiendas);
+          next = slice.data.next;
+          setLoadingLabel(
+            next === null ? 'Comparando…' : `Leyendo Tiendas ${next}/${slice.data.total}…`,
+          );
+        }
+        tiendasRef.current = collected;
+      }
+      const res = await api.post<DiffReport>('/benefits/preview', {
+        month,
+        tiendas: tiendasRef.current,
+      });
       setReport(res.data);
       setSelected(
         new Set(
@@ -234,7 +265,7 @@ export default function BenefitsSync({ siteId }: Props) {
           onClick={preview}
           disabled={!month || loading || applying}
         >
-          <RefreshCw size={16} /> {loading ? 'Cargando…' : 'Previsualizar'}
+          <RefreshCw size={16} /> {loading ? loadingLabel : 'Previsualizar'}
         </button>
         {report && (
           <button

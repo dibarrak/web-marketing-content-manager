@@ -1,8 +1,6 @@
 /** Fetch every item of the benefits collection (paginated) as ExistingItem[]. */
 import { getWebflow } from '@lib/webflow';
 import { withRetry } from '@lib/merchant-sync/webflow';
-import { MERCHANT_SYNC } from '@lib/config/sites';
-import { listAllItems } from '@lib/merchant-sync/webflow';
 import { TIENDA_BENEFIT_REF, type ExistingItem, type TiendaRef } from './sync';
 
 export async function fetchAllBenefitItems(env: Env, collectionId: string): Promise<ExistingItem[]> {
@@ -42,10 +40,4 @@ export function toTiendaRef(it: {
     isDraft: it.isDraft ?? false,
     linkedBenefitId: String(it.fieldData[TIENDA_BENEFIT_REF] ?? '') || undefined,
   };
-}
-
-/** Every Tiendas landing that carries a merchant-id (paginated, 429-safe). */
-export async function fetchTiendaRefs(env: Env): Promise<TiendaRef[]> {
-  const items = await listAllItems(getWebflow(env), MERCHANT_SYNC.tiendasCollectionId);
-  return items.map(toTiendaRef).filter((t): t is TiendaRef => t !== null);
 }
