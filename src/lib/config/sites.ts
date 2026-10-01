@@ -142,6 +142,23 @@ export const LONGTAIL_SLIDERS_SYNC = {
   displayName: 'Longtail Sliders',
 } as const;
 
+/**
+ * "Comercios destacados por categoría" collection, managed through the CSV
+ * sync flow (preview → apply). Like Longtail Sliders, every sync fully
+ * replaces the collection's contents. Its `nombre-del-comercio` and
+ * `categoria` Reference fields point at Merchants and the Categories
+ * collection respectively.
+ */
+export const FEATURED_MERCHANTS_SYNC = {
+  collectionId: '65f10880b89cfcd9e583e7e0',
+  merchantsCollectionId: MERCHANT_SYNC.merchantsCollectionId,
+  categoryCollectionId: MERCHANT_SYNC.categoryCollectionId,
+  merchantIdFieldSlug: MERCHANT_SYNC.merchantIdFieldSlug,
+  siteId: '614d688b383096276930acef',
+  workspace: 'default' as Workspace,
+  displayName: 'Comercios destacados por categoría',
+} as const;
+
 /** Workspace that owns a collection, resolved by collection id. */
 export function workspaceForCollection(collectionId: string): Workspace {
   return findCollectionById(collectionId)?.workspace ?? 'default';

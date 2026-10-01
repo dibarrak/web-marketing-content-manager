@@ -7,26 +7,31 @@ import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import ConfirmDialog from './ConfirmDialog';
 import PublishControls from './PublishControls';
-import styles from './longtailSlidersSync.module.scss';
+import styles from './featuredMerchantsSync.module.scss';
 
 type RowStatus = 'ready' | 'error';
 
-interface LongtailRow {
+interface FeaturedRow {
   row: number;
   orden: number | null;
   merchantId: string;
+  ordenOriginal: string;
   merchantName: string;
-  selectorRaw: string;
-  selectorResolved?: string;
+  categoryRaw: string;
+  categoryResolved?: string;
+  tipoRaw: string;
+  tipoResolved?: string;
   slug: string;
   status: RowStatus;
   errors?: string[];
+  warnings?: string[];
 }
 
-interface LongtailDiffReport {
-  rows: LongtailRow[];
+interface FeaturedDiffReport {
+  rows: FeaturedRow[];
   toDelete: { id: string; name: string }[];
   counts: Record<RowStatus, number>;
+  warningCount: number;
   headerError?: string;
 }
 
@@ -49,7 +54,7 @@ interface ApplyResponse {
 const ALL_STATUSES: RowStatus[] = ['ready', 'error'];
 const STATUS_LABEL: Record<RowStatus, string> = { ready: 'Listo', error: 'Error' };
 
-const NOTICE_KEY = 'longtail-sliders-publish-notice-dismissed';
+const NOTICE_KEY = 'featured-merchants-publish-notice-dismissed';
 
 function noticeDismissed(): boolean {
   try {
@@ -70,11 +75,11 @@ interface Props {
   siteId: string;
 }
 
-export default function LongtailSlidersSync({ siteId }: Props) {
+export default function FeaturedMerchantsSync({ siteId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
   const [rows, setRows] = useState<string[][] | null>(null);
-  const [report, setReport] = useState<LongtailDiffReport | null>(null);
+  const [report, setReport] = useState<FeaturedDiffReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [confirmApply, setConfirmApply] = useState(false);
@@ -111,7 +116,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
     setLoading(true);
     setReport(null);
     try {
-      const res = await api.post<LongtailDiffReport>('/longtail-sliders/preview', { rows });
+      const res = await api.post<FeaturedDiffReport>('/featured-merchants/preview', { rows });
       setReport(res.data);
     } catch (err) {
       toast.error('Error al previsualizar', { description: errMessage(err, 'Intenta de nuevo.') });
@@ -120,14 +125,14 @@ export default function LongtailSlidersSync({ siteId }: Props) {
     }
   };
 
-  /** How many 'ready' rows land in each Selector de slider group — errors
+  /** How many 'ready' rows land in each category — errors
    * aren't counted here since they won't actually be created. */
   const categoryCounts = useMemo(() => {
     if (!report) return [];
     const counts = new Map<string, number>();
     for (const r of report.rows) {
       if (r.status !== 'ready') continue;
-      const label = r.selectorResolved ?? r.selectorRaw;
+      const label = r.categoryResolved ?? r.categoryRaw;
       counts.set(label, (counts.get(label) ?? 0) + 1);
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
@@ -148,7 +153,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
     setApplying(true);
     const toastId = toast.loading('Sincronizando…');
     try {
-      const res = await api.post<ApplyResponse>('/longtail-sliders/apply', { rows });
+      const res = await api.post<ApplyResponse>('/featured-merchants/apply', { rows });
       setLastResult(res.data);
       const { deletedCount, created, createFailed } = res.data;
       if (createFailed > 0) {
@@ -184,7 +189,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
       </a>
 
       <header className={styles.toolbar}>
-        <h1>Sincronización de Longtail Sliders</h1>
+        <h1>Sincronización de Comercios destacados por categoría</h1>
       </header>
 
       {showNotice && (
@@ -207,7 +212,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
 
       <section className={styles.controls}>
         <label className={styles.uploadField}>
-          <span>CSV del calendario de promos (Slug / Merchant ID / Selector de slider)</span>
+          <span>CSV de comercios destacados (Slug / Merchant ID / Categoría guía / Tipo de Comercio)</span>
           <div className={styles.uploadRow}>
             <button
               type="button"
@@ -239,7 +244,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
             type="button"
             className={styles.primary}
             onClick={() => setConfirmApply(true)}
-            disabled={readyCount === 0 || applying}
+            disabled={readyCount === 0 || errorCount > 0 || applying}
           >
             Sincronizar ({readyCount} listo{readyCount === 1 ? '' : 's'})
           </button>
@@ -262,8 +267,8 @@ export default function LongtailSlidersSync({ siteId }: Props) {
       {report?.headerError && (
         <div className={styles.errorBanner}>
           ⚠ No se pudo leer el CSV: {report.headerError} Revisa que el archivo exportado desde el
-          Sheet conserve las columnas en su posición habitual (A: Orden, B: Slug, C: Merchant ID, E:
-          Selector de slider).
+          Sheet conserve las columnas en su posición habitual (B: Slug, C: Merchant ID, G:
+          Categoría guía, H: Tipo de Comercio).
         </div>
       )}
 
@@ -271,9 +276,9 @@ export default function LongtailSlidersSync({ siteId }: Props) {
         <>
           <div className={styles.deleteBanner}>
             ⚠ Al sincronizar se eliminarán los <strong>{toDeleteCount}</strong> item(s) que hoy existen
-            en la colección Longtail Sliders, y se crearán/publicarán los {readyCount} listos desde
+            en la colección Comercios destacados por categoría, y se crearán/publicarán los {readyCount} listos desde
             este archivo.
-            {readyCount === 0 && ' El slider quedará vacío hasta que corrijas y vuelvas a subir el CSV.'}
+            {readyCount === 0 && ' La colección quedará vacía hasta que corrijas y vuelvas a subir el CSV.'}
           </div>
 
           {categoryCounts.length > 0 && (
@@ -323,8 +328,15 @@ export default function LongtailSlidersSync({ siteId }: Props) {
 
           {errorCount > 0 && (
             <div className={styles.warnBanner}>
-              ⚠ {errorCount} fila(s) con error no se van a crear — corrígelas en el Sheet y vuelve a
-              subir el CSV.
+              ⚠ {errorCount} fila(s) con error — no se puede sincronizar hasta corregirlas en el Sheet
+              y volver a subir el CSV.
+            </div>
+          )}
+
+          {report.warningCount > 0 && (
+            <div className={styles.warnBanner}>
+              ℹ {report.warningCount} fila(s) comparten Merchant ID con otra fila (el comercio aparece
+              en más de una categoría). Es válido, pero revisa que sea intencional.
             </div>
           )}
 
@@ -338,7 +350,8 @@ export default function LongtailSlidersSync({ siteId }: Props) {
                   <th>Estado</th>
                   <th>Merchant</th>
                   <th>Orden</th>
-                  <th>Selector de slider</th>
+                  <th>Categoría</th>
+                  <th>Tipo</th>
                   <th>Detalle</th>
                 </tr>
               </thead>
@@ -353,15 +366,21 @@ export default function LongtailSlidersSync({ siteId }: Props) {
                       <strong>{r.merchantName || '(sin match)'}</strong>
                       <span className={styles.merchantId}>ID: {r.merchantId || '—'}</span>
                     </td>
-                    <td>{r.orden ?? '—'}</td>
-                    <td>{r.selectorResolved ?? r.selectorRaw ?? '—'}</td>
+                    <td>{r.orden ?? '—'}{r.ordenOriginal && r.orden !== null && String(r.orden) !== r.ordenOriginal && <span className={styles.merchantId}>CSV: {r.ordenOriginal}</span>}</td>
+                    <td>{r.categoryResolved ?? r.categoryRaw ?? '—'}</td>
+                    <td>{r.tipoResolved ?? r.tipoRaw ?? '—'}</td>
                     <td>
                       {r.status === 'error' ? (
                         <div className={styles.errorList}>
                           {r.errors?.map((err, i) => <div key={i}>⚠ {err}</div>)}
                         </div>
                       ) : (
-                        <span className={styles.merchantId}>slug: {r.slug}</span>
+                        <>
+                          <span className={styles.merchantId}>slug: {r.slug}</span>
+                          {r.warnings?.map((w, i) => (
+                            <div key={i} className={styles.errorList}>ℹ {w}</div>
+                          ))}
+                        </>
                       )}
                     </td>
                   </tr>
@@ -374,7 +393,7 @@ export default function LongtailSlidersSync({ siteId }: Props) {
 
       <ConfirmDialog
         open={confirmApply}
-        title="Sincronizar Longtail Sliders"
+        title="Sincronizar Comercios destacados"
         message={`Se eliminarán los ${toDeleteCount} item(s) actuales de la colección y se crearán/publicarán ${readyCount} item(s) nuevo(s) desde el CSV. Esta acción no se puede deshacer. ¿Continuar?`}
         confirmLabel="Sincronizar"
         cancelLabel="Cancelar"
