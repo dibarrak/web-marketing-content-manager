@@ -123,6 +123,25 @@ export const MERCHANT_SYNC = {
   merchantIdFieldSlug: 'merchant-id',
 } as const;
 
+/**
+ * "Longtail Sliders" collection, managed through the CSV sync flow (preview →
+ * apply), NOT the standard per-item CRUD — kept out of COLLECTIONS for the
+ * same reason as BENEFITS_COLLECTION/MERCHANT_SYNC.
+ *
+ * Unlike those two, every sync fully replaces the collection's contents:
+ * ALL existing items are deleted before the rows parsed from the uploaded
+ * CSV are (re)created — there is no per-item patch/merge here.
+ */
+export const LONGTAIL_SLIDERS_SYNC = {
+  collectionId: '6abc15dc3e8d3567584f750c',
+  /** Cross-referenced to resolve the `nombre-del-comercio` Reference field. */
+  merchantsCollectionId: MERCHANT_SYNC.merchantsCollectionId,
+  merchantIdFieldSlug: MERCHANT_SYNC.merchantIdFieldSlug,
+  siteId: '614d688b383096276930acef',
+  workspace: 'default' as Workspace,
+  displayName: 'Longtail Sliders',
+} as const;
+
 /** Workspace that owns a collection, resolved by collection id. */
 export function workspaceForCollection(collectionId: string): Workspace {
   return findCollectionById(collectionId)?.workspace ?? 'default';

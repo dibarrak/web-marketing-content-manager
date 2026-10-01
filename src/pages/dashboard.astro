@@ -1,6 +1,6 @@
 ---
 import AppLayout from '@layouts/AppLayout.astro';
-import { COLLECTIONS, BENEFITS_COLLECTION, MERCHANT_SYNC } from '@lib/config/sites';
+import { COLLECTIONS, BENEFITS_COLLECTION, MERCHANT_SYNC, LONGTAIL_SLIDERS_SYNC } from '@lib/config/sites';
 import { CSV_COLLECTIONS } from '@lib/config/csvCollections';
 import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { withBase } from '@lib/base-path';
@@ -108,6 +108,12 @@ const counts = await Promise.all(
               <h2>{MERCHANT_SYNC.displayName}</h2>
               <p class="muted">Procesa altas, actualizaciones y bajas desde un CSV</p>
               <p class="muted site-id-tag"><Globe size={16} /><span>{MERCHANT_SYNC.siteId}</span></p>
+            </a>
+            <a class="card" href={withBase('longtail-sliders/sync')}>
+              <RefreshCw size={32} />
+              <h2>{LONGTAIL_SLIDERS_SYNC.displayName}</h2>
+              <p class="muted">Reemplaza el slider completo desde el calendario de promos (CSV)</p>
+              <p class="muted site-id-tag"><Globe size={16} /><span>{LONGTAIL_SLIDERS_SYNC.siteId}</span></p>
             </a>
           </div>
         </section>
