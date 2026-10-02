@@ -8,7 +8,7 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '@lib/authz';
 import { MERCHANT_SYNC } from '@lib/config/sites';
-import { getWebflow } from '@lib/webflow';
+import { getWebflow, WebflowApiError } from '@lib/webflow';
 import { toTiendaRef } from '@lib/benefits/items';
 import { withRetry } from '@lib/merchant-sync/webflow';
 import type { TiendaRef } from '@lib/benefits/sync';
@@ -17,7 +17,9 @@ import { webflowErrorResponse } from '@lib/webflow/error-response';
 export const prerender = false;
 
 const PAGE_SIZE = 100;
-const PAGES_PER_REQUEST = 5;
+const PAGES_PER_REQUEST = 4;
+/** Webflow Cloud cuts requests at ~20s: don't sleep through long 429 windows. */
+const SHORT_RETRY = { maxWaitSeconds: 4 };
 
 export const GET: APIRoute = async ({ url, locals }) => {
   const user = locals.user;
@@ -32,8 +34,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
   try {
     for (let p = 0; p < PAGES_PER_REQUEST; p++) {
-      const page = await withRetry(() =>
-        wf.collections.list(MERCHANT_SYNC.tiendasCollectionId, { limit: PAGE_SIZE, offset }),
+      const page = await withRetry(
+        () => wf.collections.list(MERCHANT_SYNC.tiendasCollectionId, { limit: PAGE_SIZE, offset }),
+        SHORT_RETRY,
       );
       const items = page.items ?? [];
       total = page.pagination?.total ?? total;
@@ -42,13 +45,23 @@ export const GET: APIRoute = async ({ url, locals }) => {
         if (ref) tiendas.push(ref);
       }
       offset += PAGE_SIZE;
-      if (items.length < PAGE_SIZE || offset >= total) break;
+      if (items.length < PAGE_SIZE || offset >= total) {
+        next = null;
+        break;
+      }
       next = offset;
     }
-    // `next` only survives if the loop used every page and more remain.
-    if (next !== null && next >= total) next = null;
     return Response.json({ tiendas, next, total });
   } catch (err) {
+    // Rate-limited mid-slice: return what we have and let the UI resume after the wait.
+    if (err instanceof WebflowApiError && err.status === 429) {
+      return Response.json({
+        tiendas,
+        next: offset,
+        total,
+        retryAfter: err.retryAfterSeconds ?? 10,
+      });
+    }
     return webflowErrorResponse(err);
   }
 };

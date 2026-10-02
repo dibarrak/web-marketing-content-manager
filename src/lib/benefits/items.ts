@@ -3,13 +3,17 @@ import { getWebflow } from '@lib/webflow';
 import { withRetry } from '@lib/merchant-sync/webflow';
 import { TIENDA_BENEFIT_REF, type ExistingItem, type TiendaRef } from './sync';
 
-export async function fetchAllBenefitItems(env: Env, collectionId: string): Promise<ExistingItem[]> {
+export async function fetchAllBenefitItems(
+  env: Env,
+  collectionId: string,
+  retry?: { maxWaitSeconds?: number },
+): Promise<ExistingItem[]> {
   const wf = getWebflow(env);
   const all: ExistingItem[] = [];
   const limit = 100;
   let offset = 0;
   for (;;) {
-    const page = await withRetry(() => wf.collections.list(collectionId, { limit, offset }));
+    const page = await withRetry(() => wf.collections.list(collectionId, { limit, offset }), retry);
     const items = page.items ?? [];
     for (const it of items) {
       all.push({

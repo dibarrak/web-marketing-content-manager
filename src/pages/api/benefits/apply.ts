@@ -36,6 +36,16 @@ import { webflowErrorResponse } from '@lib/webflow/error-response';
 
 export const prerender = false;
 
+/**
+ * Webflow Cloud cuts a request off at ~20s with a 504. The loop stops starting
+ * new merchants after this budget and returns the rest as `pending`, so the UI
+ * just sends them again instead of the whole request dying mid-way.
+ */
+const TIME_BUDGET_MS = 11_000;
+/** Longest 429 wait we sit through inline; anything longer goes back to the UI. */
+const MAX_INLINE_WAIT_SECONDS = 4;
+const SHORT_RETRY = { maxWaitSeconds: MAX_INLINE_WAIT_SECONDS };
+
 /** Cap per request; keeps Worker subrequests bounded. The UI batches below this. */
 export const MAX_MERCHANTS_PER_REQUEST = 50;
 
@@ -55,6 +65,7 @@ function errMessage(err: unknown): string {
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const startedAt = Date.now();
   const user = locals.user;
   if (!user) return new Response('Unauthorized', { status: 401 });
   if (!isAdmin(user)) return new Response('Forbidden', { status: 403 });
@@ -88,7 +99,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         { status: 404 },
       );
     }
-    const existing = await fetchAllBenefitItems(env, collectionId);
+    const existing = await fetchAllBenefitItems(env, collectionId, SHORT_RETRY);
 
     // Resolve only the Tiendas the client asked to link, straight from Webflow.
     const wfRead = getWebflow(env);
@@ -96,13 +107,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     for (const [merchantId, tiendaId] of Object.entries(body?.tiendaIds ?? {})) {
       if (!merchantIds.includes(merchantId) || typeof tiendaId !== 'string') continue;
       try {
-        const t = await withRetry(() =>
-          wfRead.collections.get(MERCHANT_SYNC.tiendasCollectionId, tiendaId),
+        const t = await withRetry(
+          () => wfRead.collections.get(MERCHANT_SYNC.tiendasCollectionId, tiendaId),
+          SHORT_RETRY,
         );
         const ref = toTiendaRef({ id: t.id, isDraft: t.isDraft, fieldData: t.fieldData });
         if (ref && ref.merchantId === merchantId) tiendas.push(ref);
-      } catch {
-        // Unresolvable Tienda → the merchant falls out as "no_landing" and is skipped.
+      } catch (err) {
+        // Rate-limited: bail so the UI retries; otherwise an unresolvable Tienda
+        // just drops the merchant to "no_landing" and it is skipped.
+        if (err instanceof WebflowApiError && err.status === 429) throw err;
       }
     }
     const report = computeDiff(data, existing, tiendas);
@@ -114,7 +128,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const wf = getWebflow(env);
   const results: ApplyResult[] = [];
 
-  for (const merchantId of merchantIds) {
+  const pending: string[] = [];
+  let retryAfter: number | undefined;
+
+  for (const [idx, merchantId] of merchantIds.entries()) {
+    // Out of time (or rate-limited): hand the rest back for another request.
+    if (retryAfter !== undefined || Date.now() - startedAt > TIME_BUDGET_MS) {
+      pending.push(...merchantIds.slice(idx));
+      break;
+    }
     const entry = entriesById.get(merchantId);
     // Only "changed" (in both sheet and CMS) and "new" (sheet + Tienda landing)
     // are applied; everything else is never touched, even if the client asked.
@@ -124,16 +146,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
       let itemId = entry.itemId;
       let linkError: string | undefined;
       if (entry.isCreate) {
-        const created = await withRetry(() =>
-          wf.collections.create(collectionId, entry.fieldData as { name: string; slug: string }),
+        const created = await withRetry(
+          () => wf.collections.create(collectionId, entry.fieldData as { name: string; slug: string }),
+          SHORT_RETRY,
         );
         itemId = created.id;
         // Back-reference on the Tienda so the landing points at its new item.
         try {
-          await withRetry(() =>
-            wf.collections.update(MERCHANT_SYNC.tiendasCollectionId, entry.tiendaId!, {
-              [TIENDA_BENEFIT_REF]: created.id,
-            }),
+          await withRetry(
+            () =>
+              wf.collections.update(MERCHANT_SYNC.tiendasCollectionId, entry.tiendaId!, {
+                [TIENDA_BENEFIT_REF]: created.id,
+              }),
+            SHORT_RETRY,
           );
           await logAudit(env, {
             userId: user.id,
@@ -150,7 +175,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       } else {
         const id = entry.itemId!;
-        await withRetry(() => wf.collections.update(collectionId, id, entry.fieldData));
+        await withRetry(() => wf.collections.update(collectionId, id, entry.fieldData), SHORT_RETRY);
       }
       await logAudit(env, {
         userId: user.id,
@@ -174,11 +199,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : { merchantId, name: entry.name, action, ok: true },
       );
     } catch (err) {
+      if (err instanceof WebflowApiError && err.status === 429) {
+        // Nothing was written for this merchant (create/update failed up front):
+        // retry it, with the rest, after Webflow's window.
+        retryAfter = err.retryAfterSeconds ?? 10;
+        pending.push(merchantId);
+        continue;
+      }
       results.push({ merchantId, name: entry.name, action, ok: false, error: errMessage(err) });
     }
   }
 
   const applied = results.filter((r) => r.ok).length;
   const failed = results.length - applied;
-  return Response.json({ month, applied, failed, results });
+  return Response.json({ month, applied, failed, results, pending, retryAfter });
 };

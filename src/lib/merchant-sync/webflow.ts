@@ -24,7 +24,10 @@ function sleep(ms: number): Promise<void> {
  * a batch of ~84 rows lost the ~50 rows made during a ~16s rate-limit
  * window, recovering once it reset).
  */
-export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  opts: { maxWaitSeconds?: number } = {},
+): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
       return await fn();
@@ -36,6 +39,9 @@ export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
         err.retryAfterSeconds ?? DEFAULT_RETRY_SECONDS,
         MAX_RETRY_SECONDS,
       );
+      // Callers on a short request deadline would rather surface the 429 than
+      // sleep past the gateway timeout.
+      if (opts.maxWaitSeconds !== undefined && waitSeconds > opts.maxWaitSeconds) throw err;
       await sleep(waitSeconds * 1000);
     }
   }

@@ -67,6 +67,8 @@ const ALL_STATUSES: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'no_lan
 // Statuses visible by default (everything except the noisy "unchanged").
 const DEFAULT_VISIBLE: ChangeStatus[] = ['new', 'changed', 'out_of_source', 'no_landing', 'draft'];
 
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 function fmt(v: unknown): string {
   if (v === true) return 'Sí';
   if (v === false) return 'No';
@@ -119,14 +121,23 @@ export default function BenefitsSync({ siteId }: Props) {
         // Walk the Tiendas collection in slices so no single request times out.
         const collected: TiendaRef[] = [];
         let next: number | null = 0;
+        let stalls = 0;
         while (next !== null) {
-          const slice: { data: { tiendas: TiendaRef[]; next: number | null; total: number } } =
-            await api.get('/benefits/tiendas', { params: { offset: next } });
+          const slice: {
+            data: { tiendas: TiendaRef[]; next: number | null; total: number; retryAfter?: number };
+          } = await api.get('/benefits/tiendas', { params: { offset: next } });
           collected.push(...slice.data.tiendas);
           next = slice.data.next;
-          setLoadingLabel(
-            next === null ? 'Comparando…' : `Leyendo Tiendas ${next}/${slice.data.total}…`,
-          );
+          if (slice.data.retryAfter && next !== null) {
+            // Webflow rate limit: wait out its window, then resume the same slice.
+            if (++stalls > 10) throw new Error('Webflow limitó demasiado las solicitudes; intenta más tarde.');
+            setLoadingLabel(`Esperando límite de Webflow (${slice.data.retryAfter}s)…`);
+            await sleep(slice.data.retryAfter * 1000);
+          } else {
+            setLoadingLabel(
+              next === null ? 'Comparando…' : `Leyendo Tiendas ${next}/${slice.data.total}…`,
+            );
+          }
         }
         tiendasRef.current = collected;
       }
@@ -175,29 +186,51 @@ export default function BenefitsSync({ siteId }: Props) {
     let applied = 0;
     let failed = 0;
     try {
-      // Sequential batches: each request finishes before the next starts.
-      for (let i = 0; i < merchantIds.length; i += APPLY_BATCH_SIZE) {
-        const batch = merchantIds.slice(i, i + APPLY_BATCH_SIZE);
+      // Sequential batches. The server stops after ~11s (Webflow Cloud kills requests
+      // at ~20s) and returns the unprocessed merchants as `pending`; they go back
+      // to the front of the queue. A 429 makes it wait out Webflow's window first.
+      const queue = [...merchantIds];
+      let done = 0;
+      let rateLimitStalls = 0;
+      while (queue.length > 0) {
+        const batch = queue.splice(0, APPLY_BATCH_SIZE);
+        // For new merchants the server needs the Tienda to link; it re-verifies it.
+        const tiendaIds: Record<string, string> = {};
+        for (const id of batch) {
+          const t = tiendaByMerchant.get(id);
+          if (t) tiendaIds[id] = t;
+        }
         try {
-          // For new merchants the server needs the Tienda to link; it re-verifies it.
-          const tiendaIds: Record<string, string> = {};
-          for (const id of batch) {
-            const t = tiendaByMerchant.get(id);
-            if (t) tiendaIds[id] = t;
-          }
-          const res = await api.post<{ applied: number; failed: number }>('/benefits/apply', {
-            month,
-            merchantIds: batch,
-            tiendaIds,
-          });
+          const res = await api.post<{
+            applied: number;
+            failed: number;
+            pending?: string[];
+            retryAfter?: number;
+          }>('/benefits/apply', { month, merchantIds: batch, tiendaIds });
           applied += res.data.applied;
           failed += res.data.failed;
-        } catch {
+          const pending = res.data.pending ?? [];
+          done += batch.length - pending.length;
+          queue.unshift(...pending);
+          if (res.data.retryAfter && pending.length > 0) {
+            if (++rateLimitStalls > 10) {
+              failed += queue.length;
+              break;
+            }
+            toast.loading(`Esperando límite de Webflow (${res.data.retryAfter}s)…`, { id: toastId });
+            await sleep(Math.min(res.data.retryAfter, 60) * 1000);
+          }
+        } catch (err) {
+          if (err instanceof AxiosError && err.response?.status === 429 && ++rateLimitStalls <= 10) {
+            queue.unshift(...batch); // nothing was written; retry after a pause
+            toast.loading('Esperando límite de Webflow…', { id: toastId });
+            await sleep(15_000);
+            continue;
+          }
           failed += batch.length;
+          done += batch.length;
         }
-        toast.loading(`Aplicando ${Math.min(i + APPLY_BATCH_SIZE, merchantIds.length)}/${merchantIds.length}…`, {
-          id: toastId,
-        });
+        toast.loading(`Aplicando ${done}/${merchantIds.length}…`, { id: toastId });
       }
       if (failed > 0) {
         toast.warning(`${applied} aplicados, ${failed} con error`, {
