@@ -45,6 +45,7 @@ const HERO_BANNER_OPTIONS: OptionMap = {
     '68108dc7a297a54d04cb548db90f1ba0': 'Variante 3 - Cian-Cobalto',
     d5bb27252083be58f8ca5f5abf9987ce: 'Variante 4 - Acero-Glacial',
     '5bc1f8740c3abdf8bfc02cdf351f4652': 'Variante 5 - La vida no espera',
+    ad4a8a219a22e0cb206c89d45f18c701: 'Variante 6 - Prime Big Deals 26',
   },
 };
 

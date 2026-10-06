@@ -63,6 +63,7 @@ const gradientVariant = z.enum([
   'Variante 3 - Cian-Cobalto',
   'Variante 4 - Acero-Glacial',
   'Variante 5 - La vida no espera',
+  'Variante 6 - Prime Big Deals 26',
 ]);
 
 // Rich-text emptiness: TipTap can emit `<p></p>` when blank. Require visible content.

@@ -65,6 +65,8 @@ const GRADIENT_MAP: Record<string, string> = {
     'linear-gradient(110.42deg, #bbd1e9 11.91%, #abaeb3 53.57%, rgb(143,143,143) 74.01%)',
   'Variante 5 - La vida no espera':
     'linear-gradient(95.32deg, #0777ff 44.71%, #3df15c 100%)',
+  'Variante 6 - Prime Big Deals 26':
+    "url('https://cdn.prod.website-files.com/614d688b383096276930acef/6ac4217fb54412e60cd039a8_amazon-prime-bg.webp') center / cover #3378F5",
 };
 
 function GradientPreview({ value }: { value: unknown }) {
@@ -73,7 +75,7 @@ function GradientPreview({ value }: { value: unknown }) {
   if (!gradient) {
     return <span className={`${styles.colorPreview} ${styles.noColor}`} />;
   }
-  return <span className={styles.colorPreview} style={{ backgroundImage: gradient }} />;
+  return <span className={styles.colorPreview} style={{ background: gradient }} />;
 }
 
 function ImageZoomModal({ src, onClose }: { src: string; onClose: () => void }) {

@@ -41,6 +41,7 @@ const GRADIENT_VARIANTS = [
   'Variante 3 - Cian-Cobalto',
   'Variante 4 - Acero-Glacial',
   'Variante 5 - La vida no espera',
+  'Variante 6 - Prime Big Deals 26',
 ] as const;
 
 const EMPTY: HeroBannerFields = {
