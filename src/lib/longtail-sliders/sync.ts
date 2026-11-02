@@ -35,6 +35,9 @@ export const F = {
   selector: 'selector-de-slider',
 } as const;
 
+/** Mirrors Webflow's slug validation for this collection. */
+const SLUG_PATTERN = /^[_a-zA-Z0-9][-_a-zA-Z0-9]*$/;
+
 export function normalize(v: unknown): string {
   return v === null || v === undefined ? '' : String(v).trim();
 }
@@ -78,6 +81,7 @@ function registerOption(label: string, id: string): void {
   ['Otros', 'b5c0df28ac4ea5786b7f1f3fa476b7c8'],
   ['Exclusivos', '563fc2197dc26e7765233d831c465cab'],
   ['Promociones especiales', '90be6deb31df8d9d64538ee31bea4c78'],
+  ['QSI', 'c83ec19b4de6dba433302582076c606c'],
 ].forEach(([label, id]) => registerOption(label, id));
 
 /** Known Sheet typos/format drift → canonical (normalized) option label. */
@@ -175,7 +179,8 @@ export function computeLongtailDiff(
   dataRows.forEach((cells, i) => {
     const row = i + 2; // row 1 is the header
     const ordenRaw = normalize(cells[0]);
-    const slugRaw = normalize(cells[1]);
+    // Stray spaces in the Sheet (e.g. "123 -4567") would fail Webflow's slug pattern.
+    const slugRaw = normalize(cells[1]).replace(/\s+/g, '');
     const merchantId = normalize(cells[2]);
     const selectorRaw = normalize(cells[4]);
 
@@ -201,6 +206,8 @@ export function computeLongtailDiff(
     const slug = slugRaw || (merchantId && orden !== null ? `${merchantId}-${orden}` : '');
     if (!slug) {
       errors.push('No se pudo determinar el slug de la fila (falta columna B y datos para generarlo).');
+    } else if (!SLUG_PATTERN.test(slug)) {
+      errors.push(`El slug "${slug}" tiene caracteres no permitidos (solo letras, números, "-" y "_").`);
     } else {
       const firstRow = firstRowForSlug.get(slug);
       if (firstRow !== undefined) {

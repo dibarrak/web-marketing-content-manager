@@ -2,11 +2,12 @@ import { api } from '@lib/api-client';
 import { AxiosError } from 'axios';
 import { ArrowLeft, FileUp, RefreshCw, X } from 'lucide-react';
 import Papa from 'papaparse';
-import { useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { toast, Toaster } from 'sonner';
 import { withBase } from '@lib/base-path';
 import ConfirmDialog from './ConfirmDialog';
 import PublishControls from './PublishControls';
+import fieldStyles from '../forms/fields/fields.module.scss';
 import styles from './longtailSlidersSync.module.scss';
 
 type RowStatus = 'ready' | 'error';
@@ -81,20 +82,40 @@ export default function LongtailSlidersSync({ siteId }: Props) {
   const [query, setQuery] = useState('');
   const [visibleStatuses, setVisibleStatuses] = useState<Set<RowStatus>>(new Set(ALL_STATUSES));
   const [showNotice, setShowNotice] = useState(() => !noticeDismissed());
+  const [dragging, setDragging] = useState(false);
   const [lastResult, setLastResult] = useState<ApplyResponse | null>(null);
 
-  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFile = (file: File) => {
+    if (!/\.csv$/i.test(file.name) && file.type !== 'text/csv') {
+      toast.error('Archivo no válido', { description: 'Sube un archivo .csv.' });
+      return;
+    }
     setFileName(file.name);
     setReport(null);
     setLastResult(null);
     Papa.parse<string[]>(file, {
       header: false,
       skipEmptyLines: true,
-      complete: (result) => setRows(result.data),
+      complete: (result) => {
+        setRows(result.data);
+        void preview(result.data);
+      },
       error: (err) => toast.error('Error al leer el CSV', { description: err.message }),
     });
+  };
+
+  const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+    e.target.value = '';
+  };
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (loading || applying) return;
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFile(file);
   };
 
   const dismissNotice = () => {
@@ -106,12 +127,12 @@ export default function LongtailSlidersSync({ siteId }: Props) {
     }
   };
 
-  const preview = async () => {
-    if (!rows) return;
+  const preview = async (data: string[][] | null = rows) => {
+    if (!data) return;
     setLoading(true);
     setReport(null);
     try {
-      const res = await api.post<LongtailDiffReport>('/longtail-sliders/preview', { rows });
+      const res = await api.post<LongtailDiffReport>('/longtail-sliders/preview', { rows: data });
       setReport(res.data);
     } catch (err) {
       toast.error('Error al previsualizar', { description: errMessage(err, 'Intenta de nuevo.') });
@@ -206,30 +227,46 @@ export default function LongtailSlidersSync({ siteId }: Props) {
       )}
 
       <section className={styles.controls}>
-        <label className={styles.uploadField}>
+        <div className={styles.uploadField}>
           <span>CSV del calendario de promos (Slug / Merchant ID / Selector de slider)</span>
-          <div className={styles.uploadRow}>
-            <button
-              type="button"
-              className={styles.secondary}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading || applying}
-            >
-              <FileUp size={16} /> {fileName || 'Elegir archivo…'}
-            </button>
+          <div
+            className={`${fieldStyles.dropzone} ${dragging ? fieldStyles.dragging : ''}`}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
+            }}
+          >
+            <p style={{ margin: 0 }}>
+              {fileName ? (
+                <>
+                  <FileUp size={16} style={{ verticalAlign: 'text-bottom' }} /> {fileName} — arrastra otro
+                  para reemplazarlo
+                </>
+              ) : (
+                'Arrastra el CSV aquí, o haz click para seleccionar'
+              )}
+            </p>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv"
+              accept=".csv,text/csv"
               className={styles.hiddenInput}
               onChange={onFileChange}
             />
           </div>
-        </label>
+        </div>
         <button
           type="button"
           className={styles.secondary}
-          onClick={preview}
+          onClick={() => preview()}
           disabled={!rows || loading || applying}
         >
           <RefreshCw size={16} /> {loading ? 'Cargando…' : 'Previsualizar'}

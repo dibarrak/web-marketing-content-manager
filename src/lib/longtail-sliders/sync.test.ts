@@ -96,6 +96,16 @@ describe('computeLongtailDiff — row parsing', () => {
     expect(report.rows[0].selectorResolved).toBe('Electronicos');
   });
 
+  it('strips stray whitespace from the slug and blocks other invalid characters', () => {
+    const report = diff([
+      ['1', '111 -0001', '111', 'Merchant Uno', 'Exclusivos'],
+      ['2', '111/0002', '111', 'Merchant Uno', 'Exclusivos'],
+    ]);
+    expect(report.rows[0].status).toBe('ready');
+    expect(report.rows[0].slug).toBe('111-0001');
+    expect(report.rows[1].status).toBe('error');
+  });
+
   it('falls back to merchantId-orden when column B (Slug) is blank', () => {
     const report = diff([['5', '', '111', 'Merchant Uno', 'Exclusivos']]);
     expect(report.rows[0].status).toBe('ready');
