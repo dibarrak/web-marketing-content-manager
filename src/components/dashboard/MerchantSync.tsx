@@ -150,15 +150,27 @@ export default function MerchantSync({ siteId }: Props) {
     setApplying(true);
     setLastFailures([]);
     const toastId = toast.loading(`Aplicando ${merchantIds.length} cambios…`);
+    // Sent in small batches: one request for the whole CSV exceeds the ~20s
+    // gateway timeout (504) even though the server may keep working.
+    const BATCH_SIZE = 10;
+    let applied = 0;
+    const failures: ApplyResultRow[] = [];
     try {
-      const res = await api.post<{ applied: number; failed: number; results: ApplyResultRow[] }>(
-        '/merchant-sync/apply',
-        { rows, merchantIds },
-      );
-      const { applied, failed, results } = res.data;
-      if (failed > 0) {
-        setLastFailures(results.filter((r) => !r.ok));
-        toast.warning(`${applied} aplicados, ${failed} con error`, {
+      for (let i = 0; i < merchantIds.length; i += BATCH_SIZE) {
+        const batch = merchantIds.slice(i, i + BATCH_SIZE);
+        toast.loading(`Aplicando ${Math.min(i + batch.length, merchantIds.length)}/${merchantIds.length}…`, {
+          id: toastId,
+        });
+        const res = await api.post<{ applied: number; failed: number; results: ApplyResultRow[] }>(
+          '/merchant-sync/apply',
+          { rows, merchantIds: batch },
+        );
+        applied += res.data.applied;
+        failures.push(...res.data.results.filter((r) => !r.ok));
+      }
+      if (failures.length > 0) {
+        setLastFailures(failures);
+        toast.warning(`${applied} aplicados, ${failures.length} con error`, {
           id: toastId,
           description: 'Revisa el detalle debajo de la barra de progreso.',
         });
@@ -170,7 +182,11 @@ export default function MerchantSync({ siteId }: Props) {
       }
       await preview();
     } catch (err) {
-      toast.error('Error al aplicar', { id: toastId, description: errMessage(err, 'Intenta de nuevo.') });
+      setLastFailures(failures);
+      toast.error(`Error al aplicar (${applied} aplicados antes del fallo)`, {
+        id: toastId,
+        description: errMessage(err, 'Vuelve a previsualizar el CSV para ver qué quedó pendiente.'),
+      });
     } finally {
       setApplying(false);
       setConfirmApply(false);

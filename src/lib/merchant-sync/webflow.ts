@@ -47,28 +47,41 @@ export async function withRetry<T>(
   }
 }
 
+const LIST_CONCURRENCY = 4;
+
+/**
+ * Lists every item of a collection. The first page reports `pagination.total`,
+ * so the remaining pages are fetched concurrently (a few at a time) instead of
+ * one after another — sequential paging of the big Merchants/Tiendas
+ * collections alone exceeded the ~20s gateway timeout (504) in production.
+ */
 export async function listAllItems(
   wf: ReturnType<typeof getWebflow>,
   collectionId: string,
 ): Promise<ExistingItem[]> {
-  const all: ExistingItem[] = [];
   const limit = 100;
-  let offset = 0;
-  for (;;) {
-    const page = await withRetry(() => wf.collections.list(collectionId, { limit, offset }));
-    const items = page.items ?? [];
-    for (const it of items) {
-      all.push({
-        id: it.id,
-        isDraft: it.isDraft ?? false,
-        lastPublished: it.lastPublished ?? null,
-        fieldData: it.fieldData as Record<string, unknown>,
-      });
-    }
-    if (items.length < limit) break;
-    offset += limit;
+  const toItem = (it: Awaited<ReturnType<typeof wf.collections.list>>['items'][number]): ExistingItem => ({
+    id: it.id,
+    isDraft: it.isDraft ?? false,
+    lastPublished: it.lastPublished ?? null,
+    fieldData: it.fieldData as Record<string, unknown>,
+  });
+
+  const first = await withRetry(() => wf.collections.list(collectionId, { limit, offset: 0 }));
+  const pages: ExistingItem[][] = [(first.items ?? []).map(toItem)];
+  const total = first.pagination?.total ?? pages[0].length;
+
+  const offsets: number[] = [];
+  for (let o = limit; o < total; o += limit) offsets.push(o);
+
+  for (let i = 0; i < offsets.length; i += LIST_CONCURRENCY) {
+    const batch = offsets.slice(i, i + LIST_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map((offset) => withRetry(() => wf.collections.list(collectionId, { limit, offset }))),
+    );
+    for (const page of results) pages.push((page.items ?? []).map(toItem));
   }
-  return all;
+  return pages.flat();
 }
 
 export function bySlug(items: ExistingItem[]): Map<string, SlugOption> {

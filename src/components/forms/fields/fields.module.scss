@@ -300,11 +300,16 @@
 .rich {
   border: 1px solid $color-border;
   border-radius: $radius-md;
-  overflow: hidden;
+  // `clip` (not `hidden`) keeps the rounded corners without turning .rich into
+  // a scroll container, which would break the sticky toolbar below.
+  overflow: clip;
   background: $color-surface;
 }
 
 .richToolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   gap: $space-1;
@@ -412,6 +417,16 @@
       padding-left: $space-3;
       color: $color-text-muted;
       margin: $space-2 0;
+    }
+    iframe {
+      display: block;
+      max-width: 100%;
+      margin: $space-2 0;
+      border: 0;
+      border-radius: $radius-sm;
+      &.ProseMirror-selectednode {
+        outline: 2px solid $color-primary;
+      }
     }
   }
 }

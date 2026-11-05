@@ -4,6 +4,7 @@ import Link from '@tiptap/extension-link';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useRef, useState } from 'react';
+import { Embed, normalizeEmbedSrc } from './embedExtension';
 import styles from './fields.module.scss';
 
 interface Props {
@@ -53,6 +54,7 @@ export default function BlogContentField({
       StarterKit,
       Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener' } }),
       Image.configure({ inline: false, HTMLAttributes: { loading: 'lazy' } }),
+      Embed,
     ],
     content: value || '',
     immediatelyRender: false,
@@ -81,7 +83,20 @@ export default function BlogContentField({
     editor.chain().focus().setImage({ src: url }).run();
   };
 
-  const setHeadingLevel = (v: string) => {
+  const insertEmbed = () => {
+    if (!editor) return;
+    const raw = window.prompt('URL del post de Instagram, video de YouTube o Vimeo:');
+    if (!raw) return;
+    const src = normalizeEmbedSrc(raw);
+    if (!src) {
+      setLocalError('URL de embed no válida. Se admiten Instagram (p/reel/tv), YouTube y Vimeo por https.');
+      return;
+    }
+    setLocalError(null);
+    editor.chain().focus().setEmbed(src).run();
+  };
+
+  const setHeadingLevel =(v: string) => {
     if (!editor) return;
     if (v === 'p') editor.chain().focus().setParagraph().run();
     else editor.chain().focus().setHeading({ level: Number(v) as HeadingLevel }).run();
@@ -218,6 +233,13 @@ export default function BlogContentField({
                 </button>
                 <button
                   type="button"
+                  onClick={insertEmbed}
+                  title="Insertar embed de Instagram, YouTube o Vimeo"
+                >
+                  ▶ embed
+                </button>
+                <button
+                  type="button"
                   onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
                   title="Limpiar formato"
                 >
@@ -258,7 +280,8 @@ export default function BlogContentField({
       )}
       <small className={styles.help}>
         Evita usar H1 dentro del contenido: el H1 real de la página ya es el campo "H1" de arriba.
-        {' '}El modo HTML no valida ni sanitiza el código; pega solo HTML de confianza.
+        {' '}El modo HTML descarta las etiquetas no soportadas; los iframes solo se conservan para
+        Instagram, YouTube y Vimeo.
       </small>
       {help && !error && !localError && <small className={styles.help}>{help}</small>}
       {(error || localError) && <small className={styles.error}>{error ?? localError}</small>}
