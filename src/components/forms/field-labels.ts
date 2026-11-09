@@ -39,6 +39,15 @@ export const FIELD_LABELS: Record<string, string> = {
   'logo-de-merchant': 'Logo del merchant',
   'texto-alterno-logo-merchant': 'Texto alterno del logo del merchant',
   'variante-de-gradiente': 'Variante de gradiente',
+  'imagen-intermedia': 'Imagen intermedia',
+  'texto-alternativo-imagen-intermedia': 'Texto alternativo de la imagen intermedia',
+  'ancho-maximo-imagen-intermedia': 'Ancho máximo de la imagen intermedia',
+  'alto-maximo-imagen-intermedia': 'Alto máximo de la imagen intermedia',
+  'imagen-de-esquina': 'Imagen de esquina',
+  'texto-alternativo-imagen-de-esquina': 'Texto alternativo de la imagen de esquina',
+  'posicion-imagen-de-esquina': 'Posición de la imagen de esquina',
+  'ancho-maximo-imagen-de-esquina': 'Ancho máximo de la imagen de esquina',
+  'alto-maximo-imagen-de-esquina': 'Alto máximo de la imagen de esquina',
 
   // Comercios destacados por categoría
   orden: 'Orden',

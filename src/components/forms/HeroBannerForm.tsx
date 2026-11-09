@@ -70,7 +70,19 @@ const EMPTY: HeroBannerFields = {
   'logo-de-merchant': '',
   'texto-alterno-logo-merchant': '',
   'variante-de-gradiente': undefined,
+  'imagen-intermedia': '',
+  'texto-alternativo-imagen-intermedia': '',
+  'ancho-maximo-imagen-intermedia': undefined,
+  'alto-maximo-imagen-intermedia': undefined,
+  'imagen-de-esquina': '',
+  'texto-alternativo-imagen-de-esquina': '',
+  'posicion-imagen-de-esquina': undefined,
+  'ancho-maximo-imagen-de-esquina': undefined,
+  'alto-maximo-imagen-de-esquina': undefined,
 };
+
+const CORNER_POSITIONS = ['Inferior izquierda', 'Inferior derecha'] as const;
+const toOptionalInt = (v: unknown) => (v === '' || v == null ? undefined : Number(v));
 
 export default function HeroBannerForm({
   collectionId,
@@ -247,6 +259,110 @@ export default function HeroBannerForm({
           {...register('texto-alterno-logo-merchant')}
           error={errors['texto-alterno-logo-merchant']?.message}
         />
+      </fieldset>
+
+      <fieldset className={styles.fieldset}>
+        <legend>Imagen intermedia</legend>
+        <Controller
+          control={control}
+          name="imagen-intermedia"
+          render={({ field }) => (
+            <SingleImageField
+              fitPreview
+              label="Imagen intermedia"
+              collectionId={collectionId}
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              maxDimension={1200}
+              help="Se muestra entre los textos y los botones. Vacío = no se muestra."
+            />
+          )}
+        />
+        <TextField
+          label="Texto alternativo"
+          {...register('texto-alternativo-imagen-intermedia')}
+          error={errors['texto-alternativo-imagen-intermedia']?.message}
+          help="Vacío = imagen decorativa."
+        />
+        <div className={styles.grid}>
+          <TextField
+            label="Ancho máximo (px)"
+            type="number"
+            min={1}
+            step={1}
+            {...register('ancho-maximo-imagen-intermedia', { setValueAs: toOptionalInt })}
+            error={errors['ancho-maximo-imagen-intermedia']?.message}
+            help="Vacío = el alto conserva la proporción."
+          />
+          <TextField
+            label="Alto máximo (px)"
+            type="number"
+            min={1}
+            step={1}
+            {...register('alto-maximo-imagen-intermedia', { setValueAs: toOptionalInt })}
+            error={errors['alto-maximo-imagen-intermedia']?.message}
+            help="Vacío = el ancho conserva la proporción."
+          />
+        </div>
+      </fieldset>
+
+      <fieldset className={styles.fieldset}>
+        <legend>Imagen de esquina</legend>
+        <Controller
+          control={control}
+          name="imagen-de-esquina"
+          render={({ field }) => (
+            <SingleImageField
+              fitPreview
+              label="Imagen de esquina"
+              collectionId={collectionId}
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              maxDimension={800}
+              help="Esquina inferior del slide, fuera del texto y los botones. Vacío = no se muestra."
+            />
+          )}
+        />
+        <TextField
+          label="Texto alternativo"
+          {...register('texto-alternativo-imagen-de-esquina')}
+          error={errors['texto-alternativo-imagen-de-esquina']?.message}
+          help="Vacío = imagen decorativa."
+        />
+        <div className={styles.grid}>
+          <Controller
+            control={control}
+            name="posicion-imagen-de-esquina"
+            render={({ field }) => (
+              <SelectField
+                label="Posición"
+                options={CORNER_POSITIONS}
+                placeholder="—"
+                value={field.value ?? ''}
+                onChange={(e) => field.onChange(e.target.value || null)}
+                help="Vacío = esquina inferior derecha."
+              />
+            )}
+          />
+          <TextField
+            label="Ancho máximo (px)"
+            type="number"
+            min={1}
+            step={1}
+            {...register('ancho-maximo-imagen-de-esquina', { setValueAs: toOptionalInt })}
+            error={errors['ancho-maximo-imagen-de-esquina']?.message}
+            help="Vacío = el alto conserva la proporción."
+          />
+          <TextField
+            label="Alto máximo (px)"
+            type="number"
+            min={1}
+            step={1}
+            {...register('alto-maximo-imagen-de-esquina', { setValueAs: toOptionalInt })}
+            error={errors['alto-maximo-imagen-de-esquina']?.message}
+            help="Vacío = el ancho conserva la proporción."
+          />
+        </div>
       </fieldset>
 
       <fieldset className={styles.fieldset}>

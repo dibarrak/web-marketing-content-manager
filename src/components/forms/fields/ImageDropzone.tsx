@@ -20,6 +20,8 @@ interface Props {
   required?: boolean;
   error?: string;
   help?: string;
+  /** Muestra la imagen completa (sin recortar), con altura limitada. */
+  fitPreview?: boolean;
 }
 
 interface UploadResponse {
@@ -41,6 +43,7 @@ export default function ImageDropzone({
   required,
   error,
   help,
+  fitPreview,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -160,9 +163,12 @@ export default function ImageDropzone({
       </div>
 
       {value.length > 0 && (
-        <div className={styles.previews}>
+        <div className={fitPreview ? `${styles.previews} ${styles.previewsFit}` : styles.previews}>
           {value.map((img, i) => (
-            <div key={`${img.url}-${i}`} className={styles.preview}>
+            <div
+            key={`${img.url}-${i}`}
+            className={fitPreview ? `${styles.preview} ${styles.previewFit}` : styles.preview}
+          >
               <img src={img.url} alt={img.alt ?? ''} />
               <button
                 type="button"

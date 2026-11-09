@@ -47,6 +47,10 @@ const HERO_BANNER_OPTIONS: OptionMap = {
     '5bc1f8740c3abdf8bfc02cdf351f4652': 'Variante 5 - La vida no espera',
     ad4a8a219a22e0cb206c89d45f18c701: 'Variante 6 - Prime Big Deals 26',
   },
+  'posicion-imagen-de-esquina': {
+    '3971d191e4fe5d28d9fdc870943712e7': 'Inferior izquierda',
+    '39e5e9714b0465225454d9cfed3110cf': 'Inferior derecha',
+  },
 };
 
 const FEATURED_MERCHANT_OPTIONS: OptionMap = {

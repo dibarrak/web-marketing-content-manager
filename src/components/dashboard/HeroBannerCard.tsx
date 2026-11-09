@@ -240,6 +240,16 @@ export default function HeroBannerCard({
                   <span className={styles.label}>Logo</span>
                   <ImagePreview value={f["logo-de-merchant"]} alt="Logo" onZoom={setZoomedImage} />
                 </div>
+                <div className={styles.bannerImage}>
+                  <span className={styles.label}>Imagen intermedia</span>
+                  <ImagePreview value={f["imagen-intermedia"]} alt="Intermedia" onZoom={setZoomedImage} />
+                </div>
+                <div className={styles.bannerImage}>
+                  <span className={styles.label}>
+                    Imagen de esquina{f["posicion-imagen-de-esquina"] ? ` (${str(f["posicion-imagen-de-esquina"])})` : ""}
+                  </span>
+                  <ImagePreview value={f["imagen-de-esquina"]} alt="Esquina" onZoom={setZoomedImage} />
+                </div>
               </div>
             </div>
 

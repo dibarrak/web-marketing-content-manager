@@ -57,6 +57,7 @@ const buttonVariant = z.enum([
   'beat - primary transparent',
   'beat - secondary transparent',
 ]);
+const cornerPosition = z.enum(['Inferior izquierda', 'Inferior derecha']);
 const gradientVariant = z.enum([
   'Variante 1 - Naranja',
   'Variante 2 - Azul',
@@ -128,6 +129,16 @@ export const heroBannerSchema = z.object({
   'logo-de-merchant': z.string().nullish(),
   'texto-alterno-logo-merchant': z.string().nullish(),
   'variante-de-gradiente': gradientVariant.nullish(),
+  // Imagen intermedia (entre textos y botones) e imagen de esquina. Tamaños en px, enteros >= 1.
+  'imagen-intermedia': z.string().nullish(),
+  'texto-alternativo-imagen-intermedia': z.string().nullish(),
+  'ancho-maximo-imagen-intermedia': z.number().int().min(1).nullish(),
+  'alto-maximo-imagen-intermedia': z.number().int().min(1).nullish(),
+  'imagen-de-esquina': z.string().nullish(),
+  'texto-alternativo-imagen-de-esquina': z.string().nullish(),
+  'posicion-imagen-de-esquina': cornerPosition.nullish(),
+  'ancho-maximo-imagen-de-esquina': z.number().int().min(1).nullish(),
+  'alto-maximo-imagen-de-esquina': z.number().int().min(1).nullish(),
 });
 export type HeroBannerFields = z.infer<typeof heroBannerSchema>;
 

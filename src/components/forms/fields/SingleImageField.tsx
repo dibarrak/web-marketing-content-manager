@@ -9,6 +9,7 @@ interface Props {
   required?: boolean;
   error?: string;
   help?: string;
+  fitPreview?: boolean;
 }
 
 /**
