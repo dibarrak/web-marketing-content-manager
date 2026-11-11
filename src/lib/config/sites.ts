@@ -9,7 +9,8 @@ export type CollectionKey =
   | 'couponFilterList'
   | 'heroBanners'
   | 'blogPosts'
-  | 'featuredMerchants';
+  | 'featuredMerchants'
+  | 'automatizedAdBanners';
 
 /**
  * Which Webflow workspace a collection lives in. Each workspace has its own API
@@ -68,6 +69,16 @@ export const COLLECTIONS: Record<CollectionKey, CollectionConfig> = {
     // broken auto-pluralization). Using a readable one for the UI labels.
     displayName: 'Comercios destacados por categoría',
     singularName: 'Comercio destacado',
+    workspace: 'default',
+  },
+  // CMS-backed carousel read by the `Ad Banner` code component. Not to be
+  // confused with the `adBanners` CSV module in csvCollections.ts.
+  automatizedAdBanners: {
+    key: 'automatizedAdBanners',
+    collectionId: '6af36c1dc13f6aea012a02fe',
+    siteId: '614d688b383096276930acef',
+    displayName: 'Automatized Ad Banners',
+    singularName: 'Automatized Ad Banner',
     workspace: 'default',
   },
 };

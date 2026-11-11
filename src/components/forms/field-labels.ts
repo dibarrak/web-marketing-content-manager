@@ -54,6 +54,23 @@ export const FIELD_LABELS: Record<string, string> = {
   'nombre-del-comercio': 'Nombre del comercio',
   categoria: 'Categoría',
   'tipo-de-comercio': 'Tipo de comercio',
+
+  // Automatized Ad Banners
+  title: 'Título',
+  body: 'Cuerpo',
+  href: 'Enlace (URL)',
+  'image-2': 'Imagen',
+  'image-alt': 'Texto alternativo de la imagen',
+  'image-wide': 'Imagen ancha',
+  'logo-2': 'Logo',
+  'logo-alt': 'Texto alternativo del logo',
+  coupon: 'Cupón',
+  'coupon-label': 'Etiqueta del cupón',
+  cta: 'CTA',
+  track: 'Track',
+  'new-tab': 'Abrir en pestaña nueva',
+  'show-dates': 'Fechas de vigencia',
+  'site-target': 'Sitios de destino',
 };
 
 export function labelFor(slug: string): string {

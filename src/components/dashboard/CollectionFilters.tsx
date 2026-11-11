@@ -1,3 +1,4 @@
+import { AD_BANNER_SITES } from '@lib/ad-banners';
 import { hasDateRangeStatus } from '@lib/collection-status';
 import { referenceCollectionId, type CollectionKey } from '@lib/config/sites';
 import { MERCHANT_TYPES } from '@lib/featured-merchants';
@@ -135,7 +136,16 @@ const CollectionFilters = forwardRef<HTMLDivElement, Props>(function CollectionF
     : SORT_OPTIONS;
 
   const searchPlaceholder =
-    collectionKey === 'heroBanners' ? 'Buscar por título o nombre…' : 'Buscar por nombre…';
+    collectionKey === 'heroBanners' || collectionKey === 'automatizedAdBanners'
+      ? 'Buscar por título o nombre…'
+      : 'Buscar por nombre…';
+
+  const siteFilterOptions: readonly string[] | null =
+    collectionKey === 'heroBanners'
+      ? HERO_BANNER_SITES
+      : collectionKey === 'automatizedAdBanners'
+        ? AD_BANNER_SITES
+        : null;
 
   return (
     <div className={styles.filters} ref={ref}>
@@ -149,7 +159,7 @@ const CollectionFilters = forwardRef<HTMLDivElement, Props>(function CollectionF
         />
       </label>
 
-      {collectionKey === 'heroBanners' && (
+      {siteFilterOptions && (
         <label>
           Sitio de destino
           <select
@@ -157,7 +167,7 @@ const CollectionFilters = forwardRef<HTMLDivElement, Props>(function CollectionF
             onChange={(e) => set('siteDestination', e.target.value)}
           >
             <option value="">Todos</option>
-            {HERO_BANNER_SITES.map((site) => (
+            {siteFilterOptions.map((site) => (
               <option key={site} value={site}>
                 {site}
               </option>

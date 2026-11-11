@@ -10,6 +10,8 @@ export const STATUS_LABELS: Record<StatusKey, string> = {
 
 export function getStatus(display: string | undefined): StatusKey {
   if (!display || display === 'hidden') return 'hidden';
+  // Ad Banners accept `always` (no end date), which the component treats as live.
+  if (display === 'always') return 'active';
   const m = /^\[(\d{2})\/(\d{2})\/(\d{4})\] - \[(\d{2})\/(\d{2})\/(\d{4})\]$/.exec(display);
   if (!m) return 'inactive';
   const [, d1, mo1, y1, d2, mo2, y2] = m;
@@ -29,6 +31,7 @@ const DISPLAY_FIELDS: Partial<Record<CollectionKey, string>> = {
   coupons: 'coupon-display',
   couponFilterList: 'coupon-display',
   heroBanners: 'fechas-despliegue',
+  automatizedAdBanners: 'show-dates',
 };
 
 export function getDisplayField(

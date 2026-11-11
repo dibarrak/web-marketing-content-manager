@@ -19,12 +19,15 @@ import { CirclePlus, ArrowLeft, ListChecks, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster, toast } from 'sonner';
 import { blogFieldsFromWebflow, blogFieldsToWebflow } from '@lib/blog-fields';
+import { matchesSiteTarget } from '@lib/ad-banners';
+import AutomatizedAdBannerForm from '../forms/AutomatizedAdBannerForm';
 import BlogPostForm from '../forms/BlogPostForm';
 import CouponFilterForm from '../forms/CouponFilterForm';
 import CouponForm from '../forms/CouponForm';
 import FeaturedMerchantForm from '../forms/FeaturedMerchantForm';
 import HeroBannerForm from '../forms/HeroBannerForm';
 import QueryProvider from '../providers/QueryProvider';
+import AutomatizedAdBannerCard from './AutomatizedAdBannerCard';
 import BlogPostCard from './BlogPostCard';
 import ConfirmDialog from './ConfirmDialog';
 import CollectionFilters, { DEFAULT_FILTERS, type FilterState } from './CollectionFilters';
@@ -353,6 +356,18 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
         />
       );
     }
+    if (collectionKey === 'automatizedAdBanners') {
+      return (
+        <AutomatizedAdBannerForm
+          collectionId={collectionId}
+          defaultValues={formDefaults}
+          onSubmit={onSubmitForm as never}
+          onCancel={closeForm}
+          submitting={submitting}
+          isEditing={!!editing}
+        />
+      );
+    }
     return (
       <HeroBannerForm
         collectionId={collectionId}
@@ -451,8 +466,9 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
           .filter((item) => {
             if (filters.search) {
               const q = filters.search.toLowerCase();
-              if (collectionKey === 'heroBanners') {
-                const title = stripHtml(String(item.fieldData['titulo'] ?? '')).toLowerCase();
+              if (collectionKey === 'heroBanners' || collectionKey === 'automatizedAdBanners') {
+                const titleSlug = collectionKey === 'heroBanners' ? 'titulo' : 'title';
+                const title = stripHtml(String(item.fieldData[titleSlug] ?? '')).toLowerCase();
                 const name = item.fieldData.name.toLowerCase();
                 if (!title.includes(q) && !name.includes(q)) return false;
               } else {
@@ -468,6 +484,11 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
             }
             if (filters.siteDestination && collectionKey === 'heroBanners') {
               if (item.fieldData['pagina-despliegue'] !== filters.siteDestination) return false;
+            }
+            if (filters.siteDestination && collectionKey === 'automatizedAdBanners') {
+              const target = item.fieldData['site-target'];
+              if (!matchesSiteTarget(typeof target === 'string' ? target : '', filters.siteDestination))
+                return false;
             }
             if (collectionKey === 'featuredMerchants') {
               // `categoria` holds a referenced item id; `tipo-de-comercio` has
@@ -536,6 +557,17 @@ function CollectionPageInner({ collectionKey, collectionId, displayName, singula
                 onDuplicate={handleDuplicate}
                 deletingId={deletingId}
                 sitePublishStatus={sitePublishQuery.data}
+              />
+            );
+          }
+          if (collectionKey === 'automatizedAdBanners') {
+            return (
+              <AutomatizedAdBannerCard
+                item={item}
+                onEdit={setEditing}
+                onDelete={setPendingDelete}
+                onDuplicate={handleDuplicate}
+                deletingId={deletingId}
               />
             );
           }

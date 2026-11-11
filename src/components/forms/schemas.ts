@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SLUG_PATTERN } from '@lib/slug';
+import { isValidSiteTarget } from '@lib/ad-banners';
 
 const slugField = z
   .string()
@@ -206,10 +207,42 @@ export const featuredMerchantSchema = z.object({
 });
 export type FeaturedMerchantFields = z.infer<typeof featuredMerchantSchema>;
 
+// Flow 6 — Automatized Ad Banners. Mirrors the `data-*` contract of the `Ad Banner`
+// code component. Image/logo are stored as hosted WEBP URLs in PlainText fields
+// (`image-2` / `logo-2` — Webflow reserved the original slugs). `title` holds the
+// small HTML the component sanitizes (strong, br); `site-target` is a comma list.
+export const automatizedAdBannerSchema = z.object({
+  name: nameField,
+  slug: slugField,
+  // Required (Webflow): title, href, image, show-dates, site-target.
+  title: richTextRequired,
+  href: z.string().min(1, 'Requerido').url('URL inválida'),
+  'image-2': imageUrl,
+  'show-dates': couponDisplayField,
+  'site-target': z
+    .string()
+    .min(1, 'Elige al menos un sitio')
+    .refine(isValidSiteTarget, 'Sitio no válido. Usa los sitios de la lista o "all".'),
+  // Optional. Webflow returns `null` for empty fields, hence `.nullish()`.
+  body: z.string().nullish(),
+  'image-alt': z.string().nullish(),
+  'image-wide': z.boolean().nullish(),
+  'logo-2': z.string().nullish(),
+  'logo-alt': z.string().nullish(),
+  coupon: z.string().nullish(),
+  'coupon-label': z.string().nullish(),
+  cta: z.string().nullish(),
+  track: z.string().nullish(),
+  'new-tab': z.boolean().nullish(),
+  'slide-order': z.number().int().min(0).nullish(),
+});
+export type AutomatizedAdBannerFields = z.infer<typeof automatizedAdBannerSchema>;
+
 export const schemas = {
   coupons: couponSchema,
   couponFilterList: couponFilterSchema,
   heroBanners: heroBannerSchema,
   blogPosts: blogPostSchema,
   featuredMerchants: featuredMerchantSchema,
+  automatizedAdBanners: automatizedAdBannerSchema,
 } as const;
